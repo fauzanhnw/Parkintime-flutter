@@ -1,76 +1,76 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 
 class InformationSpotPage extends StatefulWidget {
+  final String id_lahan;
+
+  const InformationSpotPage({Key? key, required this.id_lahan}) : super(key: key);
+
   @override
   _InformationSpotPageState createState() => _InformationSpotPageState();
 }
 
-class _InformationSpotPageState extends State<InformationSpotPage> {
-  int selectedFloor = 1;
+class SlotParkir {
+  final String kodeSlot;
+  final String area;
+  final String status;
 
-  final Map<int, List<Map<String, dynamic>>> floorData = {
-    1: [
-      {
-        'labels': ['', 'A-06'],
-        'hasCar': [true, false],
-      },
-      {
-        'labels': ['A-02', ''],
-        'hasCar': [false, true],
-      },
-      {
-        'labels': ['', 'A-04'],
-        'hasCar': [true, false],
-      },
-      {'divider': true},
-      {
-        'labels': ['B-01', ''],
-        'hasCar': [false, true],
-      },
-      {
-        'labels': ['', 'B-05'],
-        'hasCar': [true, false],
-      },
-      {
-        'labels': ['B-03', 'B-04'],
-        'hasCar': [false, false],
-      },
-    ],
-    2: [
-      {
-        'labels': ['C-01', 'C-02'],
-        'hasCar': [false, false],
-      },
-      {
-        'labels': ['C-03', ''],
-        'hasCar': [true, false],
-      },
-      {
-        'labels': ['', 'C-05'],
-        'hasCar': [true, false],
-      },
-      {'divider': true},
-      {
-        'labels': ['D-01', 'D-02'],
-        'hasCar': [false, false],
-      },
-    ],
-    3: [
-      {
-        'labels': ['E-01', 'E-02'],
-        'hasCar': [false, false],
-      },
-      {
-        'labels': ['E-03', 'E-04'],
-        'hasCar': [false, true],
-      },
-      {'divider': true},
-      {
-        'labels': ['F-01', ''],
-        'hasCar': [true, false],
-      },
-    ],
-  };
+  SlotParkir({
+    required this.kodeSlot,
+    required this.area,
+    required this.status,
+  });
+
+  factory SlotParkir.fromJson(Map<String, dynamic> json) {
+    return SlotParkir(
+      kodeSlot: json['kode_slot'],
+      area: json['area'],
+      status: json['status'],
+    );
+  }
+}
+
+class _InformationSpotPageState extends State<InformationSpotPage> {
+  List<SlotParkir> allSlots = [];
+  List<String> uniqueAreas = [];
+  String? selectedArea;
+
+  @override
+  void initState() {
+    super.initState();
+    fetchSlotsByLahan(widget.id_lahan);
+  }
+
+  Future<void> fetchSlotsByLahan(String idLahan) async {
+    try {
+      final response = await http.get(
+        Uri.parse('https://app.parkintime.web.id/flutter/get_slot.php?id_lahan=$idLahan'),
+      );
+
+      if (response.statusCode == 200) {
+        final List<dynamic> slotJson = json.decode(response.body);
+        final List<SlotParkir> fetchedSlots =
+        slotJson.map((json) => SlotParkir.fromJson(json)).toList();
+
+        final Set<String> areaSet = fetchedSlots.map((e) => e.area).toSet();
+
+        setState(() {
+          allSlots = fetchedSlots;
+          uniqueAreas = areaSet.toList()..sort();
+          selectedArea = uniqueAreas.isNotEmpty ? uniqueAreas[0] : null;
+        });
+      } else {
+        throw Exception('Gagal memuat data slot');
+      }
+    } catch (e) {
+      print("Error: $e");
+    }
+  }
+
+  List<SlotParkir> get filteredSlots => selectedArea == null
+      ? []
+      : allSlots.where((slot) => slot.area == selectedArea).toList();
 
   @override
   Widget build(BuildContext context) {
@@ -93,38 +93,45 @@ class _InformationSpotPageState extends State<InformationSpotPage> {
       ),
       body: Column(
         children: [
-          // Floor selector
           Container(
             padding: EdgeInsets.symmetric(vertical: 16),
             color: Colors.white,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                _buildFloorButton(1, "1st Floor"),
-                SizedBox(width: 8),
-                _buildFloorButton(2, "2nd Floor"),
-                SizedBox(width: 8),
-                _buildFloorButton(3, "3rd Floor"),
-              ],
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              padding: EdgeInsets.symmetric(horizontal: 8),
+              child: Row(
+                children: uniqueAreas.map((area) {
+                  final isSelected = area == selectedArea;
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: ElevatedButton(
+                      onPressed: () {
+                        setState(() {
+                          selectedArea = area;
+                        });
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor:
+                        isSelected ? Color(0xFF2ECC40) : Colors.white,
+                        foregroundColor:
+                        isSelected ? Colors.white : Colors.black,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                          side: BorderSide(color: Color(0xFF2ECC40)),
+                        ),
+                      ),
+                      child: Text('$area'),
+                    ),
+                  );
+                }).toList(),
+              ),
             ),
           ),
-
-          // Dynamic slot list
           Expanded(
             child: SingleChildScrollView(
               padding: EdgeInsets.all(16),
               child: Column(
-                children:
-                    floorData[selectedFloor]!.map<Widget>((row) {
-                      if (row.containsKey('divider')) {
-                        return Divider(thickness: 1);
-                      } else {
-                        return _buildParkingRow(
-                          List<String>.from(row['labels']),
-                          List<bool>.from(row['hasCar']),
-                        );
-                      }
-                    }).toList(),
+                children: buildSlotWidgets(),
               ),
             ),
           ),
@@ -133,56 +140,73 @@ class _InformationSpotPageState extends State<InformationSpotPage> {
     );
   }
 
-  Widget _buildFloorButton(int floor, String label) {
-    final isSelected = floor == selectedFloor;
-    return ElevatedButton(
-      onPressed: () {
-        setState(() {
-          selectedFloor = floor;
-        });
-      },
-      style: ElevatedButton.styleFrom(
-        backgroundColor: isSelected ? Color(0xFF2ECC40) : Colors.white,
-        foregroundColor: isSelected ? Colors.white : Colors.black,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-          side: BorderSide(color: Color(0xFF2ECC40)),
+  List<Widget> buildSlotWidgets() {
+    List<Widget> widgets = [];
+    for (int i = 0; i < filteredSlots.length; i += 2) {
+      final first = filteredSlots[i];
+      final second = (i + 1 < filteredSlots.length) ? filteredSlots[i + 1] : null;
+
+      widgets.add(
+        _buildParkingRow(
+          [first.kodeSlot, second?.kodeSlot ?? ''],
+          [first.status, second?.status ?? ''],
         ),
-      ),
-      child: Text(label),
-    );
+      );
+    }
+    return widgets;
   }
 
-  Widget _buildParkingRow(List<String> labels, List<bool> hasCar) {
+  Widget _buildParkingRow(List<String> labels, List<String> statuses) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         children: List.generate(2, (index) {
+          final status = statuses[index];
+          final slotLabel = labels[index];
+
+          if (slotLabel.isEmpty) return Expanded(child: SizedBox());
+
+          Color bgColor;
+          Widget childContent;
+
+          if (status == 'terisi') {
+            bgColor = Colors.green.shade50;
+            childContent = Image.asset('assets/car-terisi.png');
+          } else if (status == 'occupied') {
+            bgColor = Colors.orange.shade100;
+            childContent = Center(
+              child: Text(
+                'Occupied',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.orange,
+                ),
+              ),
+            );
+          } else {
+            bgColor = Colors.green.shade100;
+            childContent = Center(
+              child: Text(
+                slotLabel,
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            );
+          }
+
           return Expanded(
             child: Container(
               height: 80,
               margin: EdgeInsets.symmetric(horizontal: 4),
               decoration: BoxDecoration(
-                color:
-                    hasCar[index] ? Colors.green.shade50 : Colors.transparent,
+                color: bgColor,
                 border: Border.all(
                   color: Colors.black26,
                   style: BorderStyle.solid,
-                  width: labels[index].isNotEmpty ? 1 : 0,
+                  width: 1,
                 ),
                 borderRadius: BorderRadius.circular(6),
               ),
-              child:
-                  hasCar[index]
-                      ? Image.asset(
-                        'assets/car.png',
-                      ) // Gambar mobil tampak atas
-                      : Center(
-                        child: Text(
-                          labels[index],
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                      ),
+              child: childContent,
             ),
           );
         }),

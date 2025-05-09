@@ -36,16 +36,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }).join(' ');
   }
 
+  String _truncateName(String fullName, int maxWords) {
+    List<String> words = fullName.split(' ');
+    if (words.length <= maxWords) return fullName;
+    return words.take(maxWords).join(' ') + '...';
+  }
+
   Future<void> logout() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('user_id');  // Hapus user_id jika ada
-    await prefs.remove('token');  // Hapus token
-    await prefs.setBool('is_logged_in', false);  // Tandai bahwa pengguna telah logout
+    await prefs.remove('user_id');
+    await prefs.remove('token');
+    await prefs.setBool('is_logged_in', false);
 
-    // Setelah logout, arahkan pengguna kembali ke halaman login
     Navigator.pushAndRemoveUntil(
       context,
-      MaterialPageRoute(builder: (context) => LoginScreen()), // Ganti dengan LoginScreen
+      MaterialPageRoute(builder: (context) => LoginScreen()),
           (Route<dynamic> route) => false,
     );
   }
@@ -61,6 +66,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             color: const Color(0xFF2ECC40),
             padding: const EdgeInsets.only(top: 40, bottom: 20, left: 16, right: 16),
             child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 const CircleAvatar(
                   radius: 35,
@@ -68,19 +74,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   child: Icon(Icons.person, size: 35, color: Colors.white),
                 ),
                 const SizedBox(width: 16),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      name,
-                      style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w600),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      email,
-                      style: const TextStyle(color: Colors.white, fontSize: 14),
-                    ),
-                  ],
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _truncateName(name, 5),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        email,
+                        style: const TextStyle(color: Colors.white, fontSize: 14),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -92,7 +106,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(16),
-                boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0, 4))],
+                boxShadow: const [
+                  BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0, 4)),
+                ],
               ),
               child: Column(
                 children: [
@@ -131,7 +147,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   backgroundColor: const Color(0xFFFF3B30),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                 ),
-                onPressed: logout, // Menambahkan logika logout
+                onPressed: logout,
                 child: const Text("Log Out", style: TextStyle(color: Colors.white, fontSize: 16)),
               ),
             ),

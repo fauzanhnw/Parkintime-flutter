@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:parkintime/screens/reservation/book_parking.dart';
 
 class SelectVehiclePage extends StatefulWidget {
+  final String id;
+
+  const SelectVehiclePage({Key? key, required this.id}) : super(key: key);
+
   @override
   _SelectVehiclePageState createState() => _SelectVehiclePageState();
 }
-
 class _SelectVehiclePageState extends State<SelectVehiclePage> {
   int? selectedVehicleIndex;
 

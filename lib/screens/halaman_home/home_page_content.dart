@@ -18,6 +18,7 @@ class HomePageContent extends StatefulWidget {
 
 class _HomePageContentState extends State<HomePageContent> {
   final List<Map<String, dynamic>> vehicles = [];
+  List<Map<String, dynamic>> parkingLots = [];
   String _userName = '';
   Timer? _refreshTimer;
 
@@ -25,8 +26,6 @@ class _HomePageContentState extends State<HomePageContent> {
   void initState() {
     super.initState();
     _loadAllData();
-
-    // Refresh otomatis setiap 30 detik
     _refreshTimer = Timer.periodic(Duration(seconds: 30), (_) {
       _loadAllData();
     });
@@ -42,6 +41,7 @@ class _HomePageContentState extends State<HomePageContent> {
     await Future.wait([
       _loadUserNameFromAPI(),
       _loadVehiclesFromAPI(),
+      _loadParkingLotsFromAPI(),
     ]);
   }
 
@@ -62,8 +62,9 @@ class _HomePageContentState extends State<HomePageContent> {
         final data = jsonDecode(response.body);
         if (data['success'] == true) {
           final fullName = data['nama_lengkap'] ?? 'User';
+          final trimmedName = _limitWords(_capitalizeEachWord(fullName), 3);
           setState(() {
-            _userName = _capitalizeEachWord(fullName);
+            _userName = trimmedName;
           });
         } else {
           setState(() => _userName = 'User');
@@ -100,6 +101,25 @@ class _HomePageContentState extends State<HomePageContent> {
     }
   }
 
+  Future<void> _loadParkingLotsFromAPI() async {
+    try {
+      final response = await http.get(
+        Uri.parse('https://app.parkintime.web.id/flutter/get_lahan.php'),
+      );
+
+      if (response.statusCode == 200) {
+        final result = json.decode(response.body);
+        if (result['success'] == true) {
+          setState(() {
+            parkingLots = List<Map<String, dynamic>>.from(result['data']);
+          });
+        }
+      }
+    } catch (e) {
+      print("Error loading parking lots: $e");
+    }
+  }
+
   String _capitalizeEachWord(String input) {
     return input.split(' ').map((word) {
       if (word.isEmpty) return word;
@@ -107,29 +127,44 @@ class _HomePageContentState extends State<HomePageContent> {
     }).join(' ');
   }
 
+  String _limitWords(String text, int maxWords) {
+    final words = text.split(' ');
+    if (words.length <= maxWords) return text;
+    return words.sublist(0, maxWords).join(' ') + '...';
+  }
+
   @override
   Widget build(BuildContext context) {
     return SafeArea(
-      child: Stack(
-        children: [
-          Column(
+      child: RefreshIndicator(
+        onRefresh: _handleRefresh,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildHeader(),
-              Expanded(
-                child: RefreshIndicator(
-                  onRefresh: _handleRefresh,
-                  child: _buildScrollableContent(context),
-                ),
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  _buildHeader(),
+                  Positioned(
+                    bottom: -40,
+                    left: 20,
+                    right: 20,
+                    child: _buildFeatureMenu(context),
+                  ),
+                ],
               ),
+              const SizedBox(height: 60),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: _buildMyCarSection(context),
+              ),
+              const SizedBox(height: 45),
+              _buildParkingSpotSection(),
             ],
           ),
-          Positioned(
-            top: 160,
-            left: 20,
-            right: 20,
-            child: _buildFeatureMenu(context),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -138,7 +173,7 @@ class _HomePageContentState extends State<HomePageContent> {
     return Container(
       width: double.infinity,
       color: Color(0xFF2ECC40),
-      padding: const EdgeInsets.only(top: 20, left: 20, right: 20, bottom: 80),
+      padding: const EdgeInsets.only(top: 20, left: 20, right: 20, bottom: 100),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -210,133 +245,117 @@ class _HomePageContentState extends State<HomePageContent> {
     );
   }
 
-  Widget _buildScrollableContent(BuildContext context) {
-    return Container(
-      color: const Color.fromARGB(255, 235, 229, 229),
-      padding: const EdgeInsets.only(top: 100),
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.only(bottom: 30),
-        physics: const AlwaysScrollableScrollPhysics(),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildMyCarSection(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            // My Car Section
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    "My Car",
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  GestureDetector(
-                    onTap: () async {
-                      final result = await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => ManageVehiclePage(),
-                        ),
-                      );
-                      if (result == true) {
-                        _loadVehiclesFromAPI();
-                      }
-                    },
-                    child: const Text(
-                      "Manage Vehicle",
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Color(0xFF2ECC40),
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+            const Text(
+              "My Car",
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
-            const SizedBox(height: 15),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: vehicles.isEmpty
-                  ? Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black12,
-                      blurRadius: 6,
-                      offset: Offset(0, 3),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  children: const [
-                    Icon(
-                      Icons.directions_car,
-                      size: 50,
-                      color: Colors.grey,
-                    ),
-                    SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        "No cars added yet",
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.black54,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              )
-                  : Column(
-                children: vehicles.map((vehicle) {
-                  return VehicleCard(
-                    plate: vehicle['no_kendaraan'] ?? '-',
-                    brand: vehicle['merek'] ?? '-',
-                    type: vehicle['tipe'] ?? '-',
-                    color: vehicle['warna'] ?? '-',
-                  );
-                }).toList(),
-              ),
-            ),
-            const SizedBox(height: 45),
-
-            // Parking Spot (static for now)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 29),
+            GestureDetector(
+              onTap: () async {
+                final result = await Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => ManageVehiclePage()),
+                );
+                if (result == true) {
+                  _loadVehiclesFromAPI();
+                }
+              },
               child: const Text(
-                "Parking Spot",
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-            ),
-            const SizedBox(height: 10),
-            Container(
-              height: 160,
-              padding: const EdgeInsets.only(left: 20),
-              child: ListView(
-                scrollDirection: Axis.horizontal,
-                children: [
-                  _buildParkingCard("Mega Mall", 31),
-                  const SizedBox(width: 15),
-                  _buildParkingCard("Grand Mall", 12),
-                  const SizedBox(width: 15),
-                  _buildParkingCard("Nagoya Hill", 7),
-                ],
+                "Manage Vehicle",
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Color(0xFF2ECC40),
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
           ],
         ),
-      ),
+        const SizedBox(height: 15),
+        vehicles.isEmpty
+            ? Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(2),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black12,
+                blurRadius: 6,
+                offset: Offset(0, 3),
+              ),
+            ],
+          ),
+          child: Row(
+            children: const [
+              Icon(Icons.directions_car, size: 50, color: Colors.grey),
+              SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  "No cars added yet",
+                  style: TextStyle(fontSize: 16, color: Colors.black54),
+                ),
+              ),
+            ],
+          ),
+        )
+            : Column(
+          children: vehicles.map((vehicle) {
+            return VehicleCard(
+              plate: vehicle['no_kendaraan'] ?? '-',
+              brand: vehicle['merek'] ?? '-',
+              type: vehicle['tipe'] ?? '-',
+              color: vehicle['warna'] ?? '-',
+            );
+          }).toList(),
+        ),
+      ],
     );
   }
 
-  Widget _buildParkingCard(String title, int available) {
+  Widget _buildParkingSpotSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 29),
+          child: Text(
+            "Parking Spot",
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+        ),
+        const SizedBox(height: 10),
+        Container(
+          height: 160,
+          padding: const EdgeInsets.only(left: 20),
+          margin: const EdgeInsets.only(bottom: 20),
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: parkingLots.length,
+            itemBuilder: (context, index) {
+              final lot = parkingLots[index];
+              return _buildParkingCard(
+                lot['nama_lokasi'] ?? 'Unknown',
+                lot['foto'] ?? '',
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildParkingCard(String title, String foto) {
     return Container(
       width: 130,
+      margin: const EdgeInsets.only(right: 15),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
@@ -352,30 +371,24 @@ class _HomePageContentState extends State<HomePageContent> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            height: 90,
+            height: 100,
             decoration: BoxDecoration(
               image: DecorationImage(
-                image: AssetImage("assets/spot.png"),
+                image: (foto != null && foto.isNotEmpty)
+                    ? NetworkImage('https://app.parkintime.web.id/foto/$foto')
+                    : AssetImage("assets/spot.png") as ImageProvider,
                 fit: BoxFit.cover,
               ),
-              borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
             ),
           ),
           Padding(
             padding: const EdgeInsets.all(8),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(fontWeight: FontWeight.w600),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  "Available $available",
-                  style: const TextStyle(color: Colors.green),
-                ),
-              ],
+            child: Text(
+              title,
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
         ],

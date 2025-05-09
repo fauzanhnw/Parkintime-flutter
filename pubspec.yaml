@@ -31,7 +31,7 @@ dependencies:
   flutter:
     sdk: flutter
   google_fonts: ^6.2.1
-  http: ^1.3.0
+  http: ^1.3.6
   qr_flutter: ^4.0.0
   intl: ^0.18.1
   # The following adds the Cupertino Icons font to your application.
@@ -49,7 +49,6 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
-
 
 
 
@@ -85,6 +84,8 @@ flutter:
     - assets/tik.png
     - assets/chek.png
     - assets/empty_car.png
+    - assets/car-terisi.png
+    - assets/mycar.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

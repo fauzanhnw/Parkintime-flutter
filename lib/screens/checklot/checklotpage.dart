@@ -14,7 +14,9 @@ class CheckLotPage extends StatefulWidget {
 
 class _CheckLotPageState extends State<CheckLotPage> {
   List<Map<String, dynamic>> parkingData = [];
+  List<Map<String, dynamic>> allParkingData = []; // Untuk pencarian
   bool isLoading = true;
+  TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
@@ -31,29 +33,32 @@ class _CheckLotPageState extends State<CheckLotPage> {
       final body = jsonDecode(response.body);
       if (body['success']) {
         final List<dynamic> data = body['data'];
+        final processed = data.map((e) {
+          int kapasitas = int.tryParse(e['kapasitas'].toString()) ?? 0;
+          int terisi = int.tryParse(e['terisi'].toString()) ?? 0;
+          String status = "Tersedia";
+          double persen = terisi / kapasitas;
+
+          if (persen >= 1.0) {
+            status = "Penuh";
+          } else if (persen >= 0.9) {
+            status = "Hampir Penuh";
+          }
+
+          return {
+            "id": e['id'],
+            "name": e['nama_lokasi'],
+            "address": e['alamat'],
+            "price": "Rp ${e['tarif_per_jam']}",
+            "capacity": "$terisi/$kapasitas",
+            "status": status,
+            "foto": e['foto'],
+          };
+        }).toList();
+
         setState(() {
-          parkingData = data.map((e) {
-            int kapasitas = int.tryParse(e['kapasitas'].toString()) ?? 0;
-            int terisi = int.tryParse(e['terisi'].toString()) ?? 0;
-            String status = "Tersedia";
-            double persen = terisi / kapasitas;
-
-            if (persen >= 1.0) {
-              status = "Penuh";
-            } else if (persen >= 0.9) {
-              status = "Hampir Penuh";
-            }
-
-            return {
-              "id": e['id'],
-              "name": e['nama_lokasi'],
-              "address": e['alamat'],
-              "price": "Rp ${e['tarif_per_jam']}",
-              "capacity": "$terisi/$kapasitas",
-              "status": status,
-              "foto": e['foto'],
-            };
-          }).toList();
+          allParkingData = processed;
+          parkingData = processed;
           isLoading = false;
         });
       }
@@ -61,6 +66,18 @@ class _CheckLotPageState extends State<CheckLotPage> {
       setState(() => isLoading = false);
     }
   }
+
+  void _filterSearchResults(String query) {
+    final filtered = allParkingData.where((item) {
+      final name = item["name"].toString().toLowerCase();
+      return name.contains(query.toLowerCase());
+    }).toList();
+
+    setState(() {
+      parkingData = filtered;
+    });
+  }
+
   String _limitWords(String text, int maxWords) {
     final words = text.split(' ');
     if (words.length <= maxWords) return text;
@@ -69,11 +86,11 @@ class _CheckLotPageState extends State<CheckLotPage> {
 
   Color _statusColor(String status) {
     switch (status) {
-      case "Available":
+      case "Tersedia":
         return Colors.green.shade100;
-      case "Almost Full":
+      case "Hampir Penuh":
         return Colors.orange.shade100;
-      case "Full":
+      case "Penuh":
         return Colors.red.shade100;
       default:
         return Colors.grey.shade200;
@@ -82,11 +99,11 @@ class _CheckLotPageState extends State<CheckLotPage> {
 
   Color _statusTextColor(String status) {
     switch (status) {
-      case "Available":
+      case "Tersedia":
         return Colors.green;
-      case "Almost Full":
+      case "Hampir Penuh":
         return Colors.orange;
-      case "Full":
+      case "Penuh":
         return Colors.red;
       default:
         return Colors.grey;
@@ -114,6 +131,8 @@ class _CheckLotPageState extends State<CheckLotPage> {
             padding: const EdgeInsets.all(16),
             color: Color(0xFF2ECC40),
             child: TextField(
+              controller: _searchController,
+              onChanged: _filterSearchResults,
               decoration: InputDecoration(
                 hintText: 'Search parking location..',
                 filled: true,
@@ -150,7 +169,8 @@ class _CheckLotPageState extends State<CheckLotPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        mainAxisAlignment:
+                        MainAxisAlignment.spaceBetween,
                         children: [
                           Text(item["name"],
                               style: TextStyle(
@@ -181,7 +201,8 @@ class _CheckLotPageState extends State<CheckLotPage> {
                       ),
                       SizedBox(height: 12),
                       Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        mainAxisAlignment:
+                        MainAxisAlignment.spaceBetween,
                         children: [
                           Text("Hourly rate\n${item["price"]}",
                               style: TextStyle(fontSize: 13)),
@@ -198,8 +219,8 @@ class _CheckLotPageState extends State<CheckLotPage> {
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (_) =>
-                                        InformationSpotPage(), // bisa kirim data id lokasi
+                                    builder: (_) => InformationSpotPage(
+                                        id_lahan: item["id"]), // kirim ID
                                   ),
                                 );
                               },
@@ -219,14 +240,14 @@ class _CheckLotPageState extends State<CheckLotPage> {
                             onPressed: () {},
                           ),
                           IconButton(
-                            icon: Icon(Icons.share, color: Colors.green),
+                            icon:
+                            Icon(Icons.share, color: Colors.green),
                             onPressed: () {
                               final message =
                                   "Parkir tersedia di ${item["name"]}, alamat: ${item["address"]}, tarif: ${item["price"]}, kapasitas: ${item["capacity"]}.";
                               Share.share(message);
                             },
                           ),
-
                         ],
                       ),
                     ],

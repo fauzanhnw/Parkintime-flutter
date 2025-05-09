@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 
 class HistoryScreen extends StatefulWidget {
   @override
@@ -7,8 +11,45 @@ class HistoryScreen extends StatefulWidget {
 
 class _HistoryScreenState extends State<HistoryScreen> {
   int _selectedIndex = 0;
+  int? _idAkun;
+  final List<String> filters = ["Valid", "Completed", "Canceled"];
+  List<HistoryItem> _historyItems = [];
 
-  final List<String> filters = ["Valid", "Complete", "Canceled"];
+  @override
+  void initState() {
+    super.initState();
+    _loadIdAkun();
+  }
+
+  Future<void> _loadIdAkun() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _idAkun = prefs.getInt('id_akun');
+    });
+    if (_idAkun != null) {
+      await fetchHistory();
+    }
+  }
+
+  Future<void> fetchHistory() async {
+    if (_idAkun == null) return;
+
+    final response = await http.post(
+      Uri.parse("https://app.parkintime.web.id/flutter/riwayat.php"),
+      body: {"id_akun": _idAkun.toString()},
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      if (data['success']) {
+        setState(() {
+          _historyItems = (data['data'] as List)
+              .map((item) => HistoryItem.fromJson(item))
+              .toList();
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -16,15 +57,12 @@ class _HistoryScreenState extends State<HistoryScreen> {
       backgroundColor: Color(0xFFF5F5F5),
       body: Column(
         children: [
-          // AppBar Hijau (hanya header)
           Container(
             height: 70,
             width: double.infinity,
             color: Colors.green,
             alignment: Alignment.bottomCenter,
           ),
-
-          // Tab Filter
           Container(
             color: Colors.white,
             padding: const EdgeInsets.symmetric(vertical: 12),
@@ -57,9 +95,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
               }),
             ),
           ),
-
           Divider(height: 1, thickness: 1),
-
           Expanded(child: _buildContentForTab()),
         ],
       ),
@@ -67,93 +103,68 @@ class _HistoryScreenState extends State<HistoryScreen> {
   }
 
   Widget _buildContentForTab() {
-    switch (_selectedIndex) {
-      case 0:
-        return _buildValidHistory();
-      case 1:
-        return _buildCompleteHistory();
-      case 2:
-        return _buildCanceledHistory();
+    String selectedStatus = filters[_selectedIndex].toLowerCase();
+    final filteredItems = _historyItems.where((item) {
+      return item.status.toLowerCase() == selectedStatus;
+    }).toList();
+
+    return RefreshIndicator(
+      onRefresh: fetchHistory,
+      child: filteredItems.isEmpty
+          ? ListView(
+        physics: AlwaysScrollableScrollPhysics(),
+        children: [
+          SizedBox(height: 200),
+          Center(child: Text("No history found.")),
+        ],
+      )
+          : ListView.builder(
+        padding: EdgeInsets.all(20),
+        itemCount: filteredItems.length,
+        itemBuilder: (context, index) {
+          final item = filteredItems[index];
+          return _buildHistoryCardFromModel(item);
+        },
+      ),
+    );
+  }
+
+  Widget _buildHistoryCardFromModel(HistoryItem item) {
+    final masuk = item.waktuMasuk;
+    final keluar = item.waktuKeluar ?? masuk;
+    final duration = keluar.difference(masuk);
+    final dateText =
+        "${DateFormat('d MMMM y').format(masuk)} - ${DateFormat('HH.mm').format(masuk)}";
+
+    return _buildHistoryCard(
+      ticket: item.ticketId,
+      date: dateText,
+      location: "${item.namaLokasi} (${item.jenis})",
+      floor: item.area,
+      slot: item.kodeSlot,
+      duration: "${duration.inHours} Hours",
+      statusWidget: _buildStatusBoxFromStatus(item),
+    );
+  }
+
+  Widget _buildStatusBoxFromStatus(HistoryItem item) {
+    final status = item.status.toLowerCase();
+
+    switch (status) {
+      case "valid":
+        return _buildStatusBox(
+          title: "Valid until",
+          date: DateFormat('d MMMM y').format(item.waktuKeluar ?? item.waktuMasuk),
+          time: DateFormat('HH.mm').format(item.waktuKeluar ?? item.waktuMasuk),
+          color: Colors.blue,
+        );
+      case "completed":
+        return _buildTextStatusBox("Completed", Colors.green, Colors.white);
+      case "canceled":
+        return _buildTextStatusBox("Canceled", Colors.red, Colors.white);
       default:
-        return Container();
+        return _buildTextStatusBox(item.status, Colors.orange, Colors.white);
     }
-  }
-
-  Widget _buildValidHistory() {
-    return ListView(
-      padding: EdgeInsets.all(20),
-      children: [
-        _buildHistoryCard(
-          ticket: "TICKET-1",
-          date: "7 June 2025 - 10.00",
-          location: "Mega Mall Batam",
-          floor: "1st Floor",
-          slot: "4A",
-          duration: "3 Hours",
-          statusWidget: _buildStatusBox(
-            title: "Valid until",
-            date: "7 June 2025",
-            time: "13.00",
-            color: Colors.blue,
-          ),
-        ),
-        _buildHistoryCard(
-          ticket: "TICKET-2",
-          date: "7 June 2025 - 10.00",
-          location: "Mega Mall Batam",
-          floor: "1st Floor",
-          slot: "4A",
-          duration: "3 Hours",
-          statusWidget: _buildTextStatusBox(
-            "Waiting for Payment",
-            Colors.blue,
-            Colors.white,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildCompleteHistory() {
-    return ListView(
-      padding: EdgeInsets.all(20),
-      children: [
-        _buildHistoryCard(
-          ticket: "TICKET-3",
-          date: "1 April 2025 - 10.00",
-          location: "Mega Mall Batam",
-          floor: "1st Floor",
-          slot: "4A",
-          duration: "3 Hours",
-          statusWidget: _buildTextStatusBox(
-            "Completed",
-            Colors.green,
-            Colors.white,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildCanceledHistory() {
-    return ListView(
-      padding: EdgeInsets.all(20),
-      children: [
-        _buildHistoryCard(
-          ticket: "TICKET-4",
-          date: "7 June 2025 - 10.00",
-          location: "Mega Mall Batam",
-          floor: "1st Floor",
-          slot: "4A",
-          duration: "3 Hours",
-          statusWidget: _buildTextStatusBox(
-            "Canceled",
-            Colors.red,
-            Colors.white,
-          ),
-        ),
-      ],
-    );
   }
 
   Widget _buildStatusBox({
@@ -238,28 +249,62 @@ class _HistoryScreenState extends State<HistoryScreen> {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Info lokasi
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      location,
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
+                    Text(location, style: TextStyle(fontWeight: FontWeight.bold)),
                     Text(floor),
                     Text(slot),
                     Text(duration),
                   ],
                 ),
               ),
-
-              // Status di kanan
               statusWidget,
             ],
           ),
         ],
       ),
+    );
+  }
+}
+
+class HistoryItem {
+  final String ticketId;
+  final String status;
+  final DateTime waktuMasuk;
+  final DateTime? waktuKeluar;
+  final int biayaTotal;
+  final String kodeSlot;
+  final String area;
+  final String namaLokasi;
+  final String jenis;
+
+  HistoryItem({
+    required this.ticketId,
+    required this.status,
+    required this.waktuMasuk,
+    this.waktuKeluar,
+    required this.biayaTotal,
+    required this.kodeSlot,
+    required this.area,
+    required this.namaLokasi,
+    required this.jenis,
+  });
+
+  factory HistoryItem.fromJson(Map<String, dynamic> json) {
+    return HistoryItem(
+      ticketId: json['tiket_id'].toString(),
+      status: json['status'],
+      waktuMasuk: DateTime.parse(json['waktu_masuk']),
+      waktuKeluar: json['waktu_keluar'] != null && json['waktu_keluar'] != ''
+          ? DateTime.tryParse(json['waktu_keluar'])
+          : null,
+      biayaTotal: int.tryParse(json['biaya_total'].toString()) ?? 0,
+      kodeSlot: json['kode_slot'],
+      area: json['area'],
+      namaLokasi: json['nama_lokasi'],
+      jenis: json['jenis'],
     );
   }
 }
