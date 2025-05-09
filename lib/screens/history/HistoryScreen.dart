@@ -139,7 +139,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     return _buildHistoryCard(
       ticket: item.ticketId,
       date: dateText,
-      location: "${item.namaLokasi} (${item.jenis})",
+      location: "${item.namaLokasi}",
       floor: item.area,
       slot: item.kodeSlot,
       duration: "${duration.inHours} Hours",
