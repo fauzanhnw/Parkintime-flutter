@@ -306,16 +306,24 @@ class _HomePageContentState extends State<HomePageContent> {
             ],
           ),
         )
-            : Column(
-          children: vehicles.map((vehicle) {
-            return VehicleCard(
-              plate: vehicle['no_kendaraan'] ?? '-',
-              brand: vehicle['merek'] ?? '-',
-              type: vehicle['tipe'] ?? '-',
-              color: vehicle['warna'] ?? '-',
-            );
-          }).toList(),
+            : SizedBox(
+          height: 100, // pastikan ini cukup untuk menampung tinggi card
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: vehicles.length,
+            separatorBuilder: (_, __) => SizedBox(width: 12),
+            itemBuilder: (context, index) {
+              final vehicle = vehicles[index];
+              return VehicleCard(
+                plate: vehicle['no_kendaraan'] ?? '-',
+                brand: vehicle['merek'] ?? '-',
+                type: vehicle['tipe'] ?? '-',
+                color: vehicle['warna'] ?? '-',
+              );
+            },
+          ),
         ),
+
       ],
     );
   }

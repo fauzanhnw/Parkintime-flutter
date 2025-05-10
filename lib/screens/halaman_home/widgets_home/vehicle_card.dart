@@ -15,36 +15,40 @@ class VehicleCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: const [
-          BoxShadow(
-            color: Colors.black12,
-            blurRadius: 6,
-            offset: Offset(0, 3),
-          )
-        ],
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.directions_car, size: 40, color: Colors.grey),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(plate, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                Text("$brand $type", style: const TextStyle(color: Colors.black54)),
-                Text("Color: $color", style: const TextStyle(color: Colors.black54)),
-              ],
+    return SizedBox(
+      width: 320, // atau ukuran sesuai desain kamu
+      child: Container(
+        margin: const EdgeInsets.only(right: 12), // spasi antar card
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: const [
+            BoxShadow(
+              color: Colors.black12,
+              blurRadius: 6,
+              offset: Offset(0, 3),
+            )
+          ],
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.directions_car, size: 40, color: Colors.grey),
+            const SizedBox(width: 12),
+            Flexible(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(plate, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  Text("$brand $type", style: const TextStyle(color: Colors.black54)),
+                  Text("$color", style: const TextStyle(color: Colors.black54)),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
+
 }
