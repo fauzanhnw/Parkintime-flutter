@@ -1,218 +1,260 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:dotted_border/dotted_border.dart';
-import 'package:parkintime/screens/reservation/review_booking_page.dart';
+import 'package:http/http.dart' as http;
+import 'package:parkintime/screens/reservation/select_vehicle.dart';
 
 class ParkingLotDetailPage extends StatefulWidget {
-  final String spotName;
+  final String id_lahan;
 
-  const ParkingLotDetailPage({required this.spotName, super.key});
+  const ParkingLotDetailPage({Key? key, required this.id_lahan}) : super(key: key);
 
   @override
-  State<ParkingLotDetailPage> createState() => _ParkingLotDetailPageState();
+  _ParkingLotDetailPageState createState() => _ParkingLotDetailPageState();
+}
+
+class SlotParkir {
+  final String kodeSlot;
+  final String area;
+  final String status;
+
+  SlotParkir({
+    required this.kodeSlot,
+    required this.area,
+    required this.status,
+  });
+
+  factory SlotParkir.fromJson(Map<String, dynamic> json) {
+    return SlotParkir(
+      kodeSlot: json['kode_slot'],
+      area: json['area'],
+      status: json['status'],
+    );
+  }
 }
 
 class _ParkingLotDetailPageState extends State<ParkingLotDetailPage> {
-  int selectedFloor = 1;
+  List<SlotParkir> allSlots = [];
+  List<String> uniqueAreas = [];
+  String? selectedArea;
   String? selectedSlot;
 
-  final Map<int, List<String>> slotData = {
-    1: ['A-02', 'A-04', 'A-06', 'B-01', 'B-05'],
-    2: ['C-01', 'C-02', 'C-03'],
-    3: ['D-01', 'D-02'],
-  };
+  @override
+  void initState() {
+    super.initState();
+    fetchSlotsByLahan(widget.id_lahan);
+  }
 
-  final List<String> occupiedSlots = ['A-02', 'A-04', 'B-05'];
+  Future<void> fetchSlotsByLahan(String idLahan) async {
+    try {
+      final response = await http.get(
+        Uri.parse('https://app.parkintime.web.id/flutter/get_slot.php?id_lahan=$idLahan'),
+      );
+
+      if (response.statusCode == 200) {
+        final List<dynamic> slotJson = json.decode(response.body);
+        final List<SlotParkir> fetchedSlots =
+        slotJson.map((json) => SlotParkir.fromJson(json)).toList();
+
+        final Set<String> areaSet = fetchedSlots.map((e) => e.area).toSet();
+
+        setState(() {
+          allSlots = fetchedSlots;
+          uniqueAreas = areaSet.toList()..sort();
+          selectedArea = uniqueAreas.isNotEmpty ? uniqueAreas[0] : null;
+        });
+      } else {
+        throw Exception('Gagal memuat data slot');
+      }
+    } catch (e) {
+      print("Error: $e");
+    }
+  }
+
+  List<SlotParkir> get filteredSlots => selectedArea == null
+      ? []
+      : allSlots.where((slot) => slot.area == selectedArea).toList();
 
   @override
   Widget build(BuildContext context) {
-    final slots = slotData[selectedFloor] ?? [];
-
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Select Parking Spot'),
-        backgroundColor: Colors.green,
-        foregroundColor: Colors.white,
-        elevation: 0,
+        toolbarHeight: 100,
+        backgroundColor: Color(0xFF2ECC40),
+        title: Text(
+          'Information Spot',
+          style: TextStyle(
+            fontSize: 20,
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () => Navigator.pop(context),
+        ),
       ),
       body: Column(
         children: [
-          const SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children:
-                [1, 2, 3].map((floor) {
-                  final isSelected = selectedFloor == floor;
+          Container(
+            padding: EdgeInsets.symmetric(vertical: 16),
+            color: Colors.white,
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              padding: EdgeInsets.symmetric(horizontal: 8),
+              child: Row(
+                children: uniqueAreas.map((area) {
+                  final isSelected = area == selectedArea;
                   return Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 6),
-                    child:
-                        isSelected
-                            ? ElevatedButton(
-                              onPressed: () {},
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.green,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(30),
-                                ),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 20,
-                                  vertical: 10,
-                                ),
-                              ),
-                              child: Text('${floor}st Floor'),
-                            )
-                            : OutlinedButton(
-                              onPressed: () {
-                                setState(() {
-                                  selectedFloor = floor;
-                                  selectedSlot = null;
-                                });
-                              },
-                              style: OutlinedButton.styleFrom(
-                                side: const BorderSide(color: Colors.green),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(30),
-                                ),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 20,
-                                  vertical: 10,
-                                ),
-                              ),
-                              child: Text(
-                                '${floor}st Floor',
-                                style: const TextStyle(color: Colors.green),
-                              ),
-                            ),
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: ElevatedButton(
+                      onPressed: () {
+                        setState(() {
+                          selectedArea = area;
+                          selectedSlot = null;
+                        });
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor:
+                        isSelected ? Color(0xFF2ECC40) : Colors.white,
+                        foregroundColor:
+                        isSelected ? Colors.white : Colors.black,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                          side: BorderSide(color: Color(0xFF2ECC40)),
+                        ),
+                      ),
+                      child: Text('$area'),
+                    ),
                   );
                 }).toList(),
+              ),
+            ),
           ),
-          const SizedBox(height: 12),
           Expanded(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: ListView.builder(
-                itemCount: (slots.length / 2).ceil(),
-                itemBuilder: (context, index) {
-                  final leftIndex = index * 2;
-                  final rightIndex = leftIndex + 1;
-
-                  return Column(
-                    children: [
-                      Row(
-                        children: [
-                          buildSlot(
-                            slots.length > leftIndex ? slots[leftIndex] : null,
-                          ),
-                          buildSlot(
-                            slots.length > rightIndex
-                                ? slots[rightIndex]
-                                : null,
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                    ],
+            child: SingleChildScrollView(
+              padding: EdgeInsets.all(16),
+              child: Column(
+                children: buildSlotWidgets(),
+              ),
+            ),
+          ),
+          if (selectedSlot != null)
+            Container(
+              width: double.infinity,
+              margin: EdgeInsets.all(16),
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => SelectVehiclePage(kodeslot: selectedSlot!,),
+                    ),
                   );
                 },
-              ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(20),
-            child: ElevatedButton(
-              onPressed:
-                  selectedSlot == null
-                      ? null
-                      : () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder:
-                                (context) => ReviewBookingPage(
-                                  parkingArea: 'Mega Mall Batam Center',
-                                  address: 'Jl. Engku Putri No.1, Belian',
-                                  vehicle: 'Daihatsu (BP 1234 AA)',
-                                  parkingSpot: '1st Floor ($selectedSlot)',
-                                  date: '12 March 2025',
-                                  duration: '4 hours',
-                                  hours: '09:00 AM - 12:00 PM',
-                                  pricePerHour: 5000,
-                                ),
-                          ),
-                        );
-                      },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
-                minimumSize: const Size(double.infinity, 55),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
+
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Color(0xFF2ECC40),
+                  padding: EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                child: Text(
+                  'Reservation Slot $selectedSlot',
+                  style: TextStyle(fontSize: 16, color: Colors.white),
                 ),
               ),
-              child: const Text('Continue', style: TextStyle(fontSize: 18)),
             ),
-          ),
         ],
       ),
     );
   }
 
-  Widget buildSlot(String? slot) {
-    final isOccupied = slot != null && occupiedSlots.contains(slot);
-    final isSelected = slot == selectedSlot;
+  List<Widget> buildSlotWidgets() {
+    List<Widget> widgets = [];
+    for (int i = 0; i < filteredSlots.length; i += 2) {
+      final first = filteredSlots[i];
+      final second = (i + 1 < filteredSlots.length) ? filteredSlots[i + 1] : null;
 
-    return Expanded(
-      child: GestureDetector(
-        onTap:
-            (slot == null || isOccupied)
-                ? null
-                : () {
-                  setState(() {
-                    selectedSlot = slot;
-                  });
-                },
-        child: TweenAnimationBuilder<double>(
-          duration: const Duration(milliseconds: 300),
-          tween: Tween<double>(begin: 1, end: isSelected ? 1.05 : 1.0),
-          builder: (context, scale, child) {
-            return Transform.scale(
-              scale: scale,
-              child: Container(
-                margin: const EdgeInsets.all(6),
-                height: 80,
-                child:
-                    isOccupied
-                        ? ClipRRect(
-                          borderRadius: BorderRadius.circular(10),
-                          child: Image.asset(
-                            'assets/car.png',
-                            fit: BoxFit.contain,
-                          ),
-                        )
-                        : Container(
-                          decoration: BoxDecoration(
-                            color: isSelected ? Colors.yellow : Colors.white,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: DottedBorder(
-                            borderType: BorderType.RRect,
-                            radius: const Radius.circular(10),
-                            color: Colors.green,
-                            strokeWidth: 2,
-                            dashPattern: [5, 4],
-                            child: Center(
-                              child: Text(
-                                slot ?? '',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.black,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
+      widgets.add(
+        _buildParkingRow(
+          [first.kodeSlot, second?.kodeSlot ?? ''],
+          [first.status, second?.status ?? ''],
+        ),
+      );
+    }
+    return widgets;
+  }
+
+  Widget _buildParkingRow(List<String> labels, List<String> statuses) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        children: List.generate(2, (index) {
+          final status = statuses[index];
+          final slotLabel = labels[index];
+
+          if (slotLabel.isEmpty) return Expanded(child: SizedBox());
+
+          bool isAvailable = status != 'terisi' && status != 'occupied';
+          bool isSelected = slotLabel == selectedSlot;
+
+          Color bgColor;
+          Widget childContent;
+
+          if (status == 'terisi') {
+            bgColor = Colors.green.shade50;
+            childContent = Image.asset('assets/car-terisi.png');
+          } else if (status == 'occupied') {
+            bgColor = Colors.orange.shade100;
+            childContent = Center(
+              child: Text(
+                'Occupied',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.orange,
+                ),
               ),
             );
-          },
-        ),
+          } else {
+            bgColor = isSelected ? Color(0xFF2ECC40) : Colors.green.shade100;
+            childContent = Center(
+              child: Text(
+                slotLabel,
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: isSelected ? Colors.white : Colors.black,
+                ),
+              ),
+            );
+          }
+
+          return Expanded(
+            child: GestureDetector(
+              onTap: isAvailable
+                  ? () {
+                setState(() {
+                  selectedSlot = slotLabel == selectedSlot ? null : slotLabel;
+                });
+              }
+                  : null,
+              child: Container(
+                height: 80,
+                margin: EdgeInsets.symmetric(horizontal: 4),
+                decoration: BoxDecoration(
+                  color: bgColor,
+                  border: Border.all(
+                    color: Colors.black26,
+                    style: BorderStyle.solid,
+                    width: 1,
+                  ),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: childContent,
+              ),
+            ),
+          );
+        }),
       ),
     );
   }

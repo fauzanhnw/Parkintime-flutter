@@ -14,7 +14,7 @@ class ParkingSpotCard extends StatelessWidget {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => ParkingLotDetailPage(spotName: name),
+            builder: (_) => ParkingLotDetailPage(id_lahan: name),
           ),
         );
       },

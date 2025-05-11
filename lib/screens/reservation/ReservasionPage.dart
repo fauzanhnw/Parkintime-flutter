@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:parkintime/screens/reservation/select_vehicle.dart';
+import 'package:parkintime/screens/reservation/select_spot_parkir.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -219,8 +219,8 @@ class _ReservasionpageState extends State<Reservasionpage> {
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (_) => SelectVehiclePage(
-                                        id: item["id"]), // kirim ID
+                                    builder: (_) => ParkingLotDetailPage(
+                                        id_lahan: item["id"]), // kirim ID
                                   ),
                                 );
                               },

@@ -140,7 +140,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
       ticket: item.ticketId,
       date: dateText,
       location: "${item.namaLokasi}",
-      floor: item.area,
       slot: item.kodeSlot,
       duration: "${duration.inHours} Hours",
       statusWidget: _buildStatusBoxFromStatus(item),
@@ -217,7 +216,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
     required String ticket,
     required String date,
     required String location,
-    required String floor,
     required String slot,
     required String duration,
     required Widget statusWidget,
@@ -254,7 +252,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(location, style: TextStyle(fontWeight: FontWeight.bold)),
-                    Text(floor),
                     Text(slot),
                     Text(duration),
                   ],
@@ -276,7 +273,6 @@ class HistoryItem {
   final DateTime? waktuKeluar;
   final int biayaTotal;
   final String kodeSlot;
-  final String area;
   final String namaLokasi;
   final String jenis;
 
@@ -287,7 +283,6 @@ class HistoryItem {
     this.waktuKeluar,
     required this.biayaTotal,
     required this.kodeSlot,
-    required this.area,
     required this.namaLokasi,
     required this.jenis,
   });
@@ -302,7 +297,6 @@ class HistoryItem {
           : null,
       biayaTotal: int.tryParse(json['biaya_total'].toString()) ?? 0,
       kodeSlot: json['kode_slot'],
-      area: json['area'],
       namaLokasi: json['nama_lokasi'],
       jenis: json['jenis'],
     );

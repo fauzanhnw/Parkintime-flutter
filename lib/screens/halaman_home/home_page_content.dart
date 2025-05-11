@@ -341,9 +341,9 @@ class _HomePageContentState extends State<HomePageContent> {
         ),
         const SizedBox(height: 10),
         Container(
-          height: 160,
+          height: 180,
           padding: const EdgeInsets.only(left: 20),
-          margin: const EdgeInsets.only(bottom: 20),
+          margin: const EdgeInsets.only(bottom: 10),
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
             itemCount: parkingLots.length,

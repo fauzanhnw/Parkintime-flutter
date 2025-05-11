@@ -5,7 +5,7 @@ import 'package:parkintime/screens/reservation/select_spot_parkir.dart';
 
 class BookParkingDetailsPage extends StatefulWidget {
   final int pricePerHour;
-  const BookParkingDetailsPage({Key? key, this.pricePerHour = 5000})
+  const BookParkingDetailsPage({Key? key, this.pricePerHour = 5000, required String kodeslot, required String vehiclePlate})
     : super(key: key);
 
   @override
@@ -190,7 +190,7 @@ class _BookParkingDetailsPageState extends State<BookParkingDetailsPage> {
                             MaterialPageRoute(
                               builder:
                                   (_) => const ParkingLotDetailPage(
-                                    spotName: 'Mega mall',
+                                    id_lahan: 'Mega mall',
                                   ),
                             ),
                           );

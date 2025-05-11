@@ -59,100 +59,103 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF3F3F3),
-      body: Column(
-        children: [
-          Container(
-            width: double.infinity,
-            color: const Color(0xFF2ECC40),
-            padding: const EdgeInsets.only(top: 40, bottom: 20, left: 16, right: 16),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                const CircleAvatar(
-                  radius: 35,
-                  backgroundColor: Colors.grey,
-                  child: Icon(Icons.person, size: 35, color: Colors.white),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        _truncateName(name, 5),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        email,
-                        style: const TextStyle(color: Colors.white, fontSize: 14),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 20),
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: const [
-                  BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0, 4)),
-                ],
-              ),
-              child: Column(
+      body: SingleChildScrollView( // <-- Tambahkan ini
+        child: Column(
+          children: [
+            Container(
+              width: double.infinity,
+              color: const Color(0xFF2ECC40),
+              padding: const EdgeInsets.only(top: 40, bottom: 20, left: 16, right: 16),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  _buildMenuItem(Icons.person_outline, "Edit Profile", () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => EditProfileScreen()),
-                    ).then((_) => _loadUserInfo());
-                  }),
-                  const Divider(height: 1),
-                  _buildMenuItem(Icons.lock_outline, "Change Password", () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => ChangePasswordScreen()),
-                    );
-                  }),
-                  const Divider(height: 1),
-                  _buildMenuItem(Icons.directions_car, "My Car", () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => ManageVehiclePage()),
-                    );
-                  }),
+                  const CircleAvatar(
+                    radius: 35,
+                    backgroundColor: Colors.grey,
+                    child: Icon(Icons.person, size: 35, color: Colors.white),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _truncateName(name, 5),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          email,
+                          style: const TextStyle(color: Colors.white, fontSize: 14),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),
-          ),
-          const SizedBox(height: 20),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: SizedBox(
-              width: 350,
-              height: 50,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFFF3B30),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            const SizedBox(height: 20),
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: const [
+                    BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0, 4)),
+                  ],
                 ),
-                onPressed: logout,
-                child: const Text("Log Out", style: TextStyle(color: Colors.white, fontSize: 16)),
+                child: Column(
+                  children: [
+                    _buildMenuItem(Icons.person_outline, "Edit Profile", () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => EditProfileScreen()),
+                      ).then((_) => _loadUserInfo());
+                    }),
+                    const Divider(height: 1),
+                    _buildMenuItem(Icons.lock_outline, "Change Password", () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => ChangePasswordScreen()),
+                      );
+                    }),
+                    const Divider(height: 1),
+                    _buildMenuItem(Icons.directions_car, "My Car", () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => ManageVehiclePage()),
+                      );
+                    }),
+                  ],
+                ),
               ),
             ),
-          ),
-        ],
+            const SizedBox(height: 20),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: SizedBox(
+                width: 350,
+                height: 50,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFFF3B30),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  ),
+                  onPressed: logout,
+                  child: const Text("Log Out", style: TextStyle(color: Colors.white, fontSize: 16)),
+                ),
+              ),
+            ),
+            const SizedBox(height: 20), // Tambahkan jarak bawah agar konten tidak terpotong
+          ],
+        ),
       ),
     );
   }
