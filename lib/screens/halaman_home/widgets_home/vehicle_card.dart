@@ -16,7 +16,7 @@ class VehicleCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 320, // atau ukuran sesuai desain kamu
+      width: 350, // atau ukuran sesuai desain kamu
       child: Container(
         margin: const EdgeInsets.only(right: 12), // spasi antar card
         padding: const EdgeInsets.all(12),
@@ -33,7 +33,13 @@ class VehicleCard extends StatelessWidget {
         ),
         child: Row(
           children: [
-            const Icon(Icons.directions_car, size: 40, color: Colors.grey),
+            Image.asset(
+              'assets/car.png',
+              width: 60,
+              height: 60,
+              fit: BoxFit.contain,
+            ),
+
             const SizedBox(width: 12),
             Flexible(
               child: Column(

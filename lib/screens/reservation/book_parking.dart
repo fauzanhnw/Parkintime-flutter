@@ -5,7 +5,11 @@ import 'package:parkintime/screens/reservation/select_spot_parkir.dart';
 
 class BookParkingDetailsPage extends StatefulWidget {
   final int pricePerHour;
-  const BookParkingDetailsPage({Key? key, this.pricePerHour = 5000, required String kodeslot, required String vehiclePlate})
+  const BookParkingDetailsPage({Key? key,
+    this.pricePerHour = 5000,
+    required String kodeslot,
+    required String vehiclePlate,
+    required String vehicleId})
     : super(key: key);
 
   @override

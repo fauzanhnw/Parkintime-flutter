@@ -6,7 +6,9 @@ import 'package:parkintime/screens/reservation/select_vehicle.dart';
 class ParkingLotDetailPage extends StatefulWidget {
   final String id_lahan;
 
-  const ParkingLotDetailPage({Key? key, required this.id_lahan}) : super(key: key);
+  const ParkingLotDetailPage({Key? key,
+    required this.id_lahan
+  }) : super(key: key);
 
   @override
   _ParkingLotDetailPageState createState() => _ParkingLotDetailPageState();

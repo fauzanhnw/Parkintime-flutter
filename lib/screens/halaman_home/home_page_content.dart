@@ -281,6 +281,10 @@ class _HomePageContentState extends State<HomePageContent> {
         vehicles.isEmpty
             ? Container(
           width: double.infinity,
+          constraints: BoxConstraints(
+            minHeight: 100, // Tinggi minimum
+            // maxHeight: 150, // Opsional: tinggi maksimum
+          ),
           padding: const EdgeInsets.all(2),
           decoration: BoxDecoration(
             color: Colors.white,
@@ -294,8 +298,13 @@ class _HomePageContentState extends State<HomePageContent> {
             ],
           ),
           child: Row(
-            children: const [
-              Icon(Icons.directions_car, size: 50, color: Colors.grey),
+            children: [
+              Image.asset(
+                'assets/car.png',
+                width: 60,
+                height: 60,
+                fit: BoxFit.contain,
+              ),
               SizedBox(width: 12),
               Expanded(
                 child: Text(

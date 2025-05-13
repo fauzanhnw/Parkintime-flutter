@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:parkintime/screens/reservation/book_parking.dart';
+import 'package:parkintime/screens/my_car/add_car.dart';
 
 class SelectVehiclePage extends StatefulWidget {
   final String kodeslot;
@@ -30,11 +31,14 @@ class _SelectVehiclePageState extends State<SelectVehiclePage> {
 
   Future<void> loadIdAkun() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    idAkun = prefs.getString('id_akun');
+    idAkun = prefs.getInt('id_akun')?.toString(); // Konversi ke String
+
+    print('idAkun yang diambil: $idAkun');
 
     if (idAkun != null) {
       fetchVehicles();
     } else {
+      print('idAkun tidak tersedia');
       setState(() {
         isLoading = false;
       });
@@ -43,37 +47,40 @@ class _SelectVehiclePageState extends State<SelectVehiclePage> {
 
   Future<void> fetchVehicles() async {
     try {
-      // Mengambil data kendaraan dari API
+      print('Fetching vehicles...');
       final response = await http.get(Uri.parse(
         'https://app.parkintime.web.id/flutter/get_car.php?id_akun=$idAkun',
       ));
 
-      // Debugging response body
-      print('Response Body: ${response.body}');
+      print('Response received: ${response.body}');
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> json = jsonDecode(response.body);
+        print('Parsed JSON: $json');
 
         if (json['status'] == true) {
           final List<dynamic> data = json['data'];
+          print('Vehicle data: $data');
 
-          // Map data kendaraan ke dalam list vehicles
           setState(() {
             vehicles = data.map<Map<String, String>>((item) => {
-              'brand': item['merek'] ?? 'No brand',  // Menggunakan merek
-              'plate': item['no_kendaraan'] ?? 'No plate',  // Menggunakan no_kendaraan
-              'image': 'assets/car.png',  // Gambar default jika tidak ada gambar
+              'carid': item['id'] ?? '',
+              'brand': item['merek'] ?? 'No brand',
+              'type': item['tipe'] ?? 'No type',
+              'plate': item['no_kendaraan'] ?? 'No plate',
+              'image': 'assets/car.png',
             }).toList();
             isLoading = false;
           });
+          print('isLoading status: $isLoading');
         } else {
-          throw Exception('No vehicles found or status is false');
+          throw Exception('No vehicles found');
         }
       } else {
         throw Exception('Failed to load vehicles');
       }
     } catch (e) {
-      print('Error fetching vehicles: $e');
+      print('Error: $e');
       setState(() {
         isLoading = false;
       });
@@ -101,14 +108,14 @@ class _SelectVehiclePageState extends State<SelectVehiclePage> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text("Tidak ada kendaraan yang terdaftar."),
+                    Text("There are no vehicles registered"),
                     SizedBox(height: 12),
                     GestureDetector(
                       onTap: () {
-                        Navigator.pushNamed(context, '/addCar');
+                        Navigator.pushNamed(context, '/AddCarScreen');
                       },
                       child: Text(
-                        "Tambahkan kendaraan",
+                        "Add Vehicle",
                         style: TextStyle(
                           color: Colors.green,
                           fontWeight: FontWeight.bold,
@@ -138,14 +145,14 @@ class _SelectVehiclePageState extends State<SelectVehiclePage> {
                       ),
                       child: Row(
                         children: [
-                          Image.asset(vehicle['image']!, height: 60),  // Gambar kendaraan
+                          Image.asset(vehicle['image']!, height: 60),
                           SizedBox(width: 16),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  vehicle['brand']!,  // Merek kendaraan
+                                  vehicle['plate']!,
                                   style: TextStyle(
                                     fontWeight: FontWeight.bold,
                                     fontSize: 16,
@@ -153,7 +160,12 @@ class _SelectVehiclePageState extends State<SelectVehiclePage> {
                                 ),
                                 SizedBox(height: 4),
                                 Text(
-                                  vehicle['plate']!,  // Nomor kendaraan
+                                  vehicle['brand']!,
+                                  style: TextStyle(color: Colors.grey[700]),
+                                ),
+                                SizedBox(height: 2),
+                                Text(
+                                  vehicle['type']!,
                                   style: TextStyle(color: Colors.grey[600]),
                                 ),
                               ],
@@ -174,6 +186,7 @@ class _SelectVehiclePageState extends State<SelectVehiclePage> {
                     ),
                   );
                 },
+
               ),
             ),
             Padding(
@@ -188,7 +201,7 @@ class _SelectVehiclePageState extends State<SelectVehiclePage> {
                       builder: (_) => BookParkingDetailsPage(
                         pricePerHour: 5000,
                         kodeslot: widget.kodeslot,
-                        vehiclePlate: selectedVehicle['plate']!,
+                        vehicleId: selectedVehicle['carid']!, vehiclePlate: '',
                       ),
                     ),
                   );
