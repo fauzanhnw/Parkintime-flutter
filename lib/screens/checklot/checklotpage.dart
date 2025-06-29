@@ -115,11 +115,22 @@ class _CheckLotPageState extends State<CheckLotPage> {
     return Scaffold(
       backgroundColor: const Color(0xFFF2F2F2),
       appBar: AppBar(
-        backgroundColor: Color(0xFF2ECC40),
-        elevation: 0,
-        title: const Text('Check Lot', style: TextStyle(color: Colors.white)),
+        backgroundColor: Color(0xFF629584),
+        centerTitle: true, // ✅ Tengahin judul
+        title: Text(
+          'Check Lot',
+          style: TextStyle(
+            fontSize: 20,
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: Colors.white),
+          icon: Icon(
+            Icons.arrow_back_rounded,
+            color: Colors.white,
+            size: 28,
+          ), // ✅ Icon back lebih tebal
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -128,8 +139,9 @@ class _CheckLotPageState extends State<CheckLotPage> {
           : Column(
         children: [
           Container(
-            padding: const EdgeInsets.all(16),
-            color: Color(0xFF2ECC40),
+            height: 80,
+            padding: const EdgeInsets.all(15),
+            color: Color(0xFF629584),
             child: TextField(
               controller: _searchController,
               onChanged: _filterSearchResults,

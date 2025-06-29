@@ -66,16 +66,27 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF2F2F2),
+      backgroundColor: const Color.fromARGB(255, 240, 237, 237),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF2ECC40),
-        elevation: 0,
+        toolbarHeight: 90,
+        backgroundColor: const Color(0xFF629584),
+        centerTitle: true, // ✅ Tengahin judul
+        title: Text(
+          'Change Password',
+          style: TextStyle(
+            fontSize: 20,
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          icon: Icon(
+            Icons.arrow_back_rounded,
+            color: Colors.white,
+            size: 28,
+          ), // ✅ Icon back lebih tebal
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text("Change Password", style: TextStyle(color: Colors.white)),
-        centerTitle: true,
       ),
       body: Padding(
         padding: const EdgeInsets.all(20),

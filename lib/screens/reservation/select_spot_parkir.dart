@@ -79,9 +79,11 @@ class _ParkingLotDetailPageState extends State<ParkingLotDetailPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Color.fromARGB(255, 231, 229, 229),
       appBar: AppBar(
         toolbarHeight: 100,
-        backgroundColor: Color(0xFF2ECC40),
+        backgroundColor: Color(0xFF629584),
+        centerTitle: true, // ✅ Tengahin judul
         title: Text(
           'Information Spot',
           style: TextStyle(
@@ -91,7 +93,11 @@ class _ParkingLotDetailPageState extends State<ParkingLotDetailPage> {
           ),
         ),
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: Colors.white),
+          icon: Icon(
+            Icons.arrow_back_rounded,
+            color: Colors.white,
+            size: 28,
+          ), // ✅ Icon back lebih tebal
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -99,7 +105,7 @@ class _ParkingLotDetailPageState extends State<ParkingLotDetailPage> {
         children: [
           Container(
             padding: EdgeInsets.symmetric(vertical: 16),
-            color: Colors.white,
+            color: const Color.fromARGB(255, 237, 234, 234),
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               padding: EdgeInsets.symmetric(horizontal: 8),
@@ -149,7 +155,11 @@ class _ParkingLotDetailPageState extends State<ParkingLotDetailPage> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => SelectVehiclePage(kodeslot: selectedSlot!,),
+                      // Mengirimkan kode slot dan juga id lahan ke halaman SelectVehiclePage
+                      builder: (context) => SelectVehiclePage(
+                        kodeslot: selectedSlot!,
+                        id_lahan: widget.id_lahan,
+                      ),
                     ),
                   );
                 },

@@ -44,7 +44,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
     });
 
     try {
-      final url = Uri.parse("https://app.parkintime.web.id/flutter/register.php");
+      final url = Uri.parse(
+        "https://app.parkintime.web.id/flutter/register.php",
+      );
       final response = await http.post(
         url,
         body: {
@@ -131,7 +133,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color.fromARGB(255, 245, 241, 241),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24.0),
@@ -246,12 +248,28 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
               ),
               const SizedBox(height: 20),
-              TextButton(
-                onPressed: _isLoading ? null : () => Navigator.pop(context),
-                child: Text(
-                  "Already have an account? Sign In",
-                  style: GoogleFonts.poppins(color: Color(0xFF2ECC40)),
-                ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    "Already have an account?",
+                    style: GoogleFonts.poppins(
+                      color: Colors.black54,
+                      fontSize: 14,
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: _isLoading ? null : () => Navigator.pop(context),
+                    child: Text(
+                      "Sign In",
+                      style: GoogleFonts.poppins(
+                        color: Color(0xFF2ECC40), // hijau terang
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),

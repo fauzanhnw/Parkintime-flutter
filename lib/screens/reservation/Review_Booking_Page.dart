@@ -1,25 +1,31 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:parkintime/screens/ticket_page.dart';
+import 'package:http/http.dart' as http;
+import 'package:intl/intl.dart';
+import 'package:parkintime/screens/payment_webview_page.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ReviewBookingPage extends StatefulWidget {
-  final String parkingArea;
-  final String address;
-  final String vehicle;
-  final String parkingSpot;
+  final String kodeslot;
+  final String id_lahan;
+  final String carid;
   final String date;
   final String duration;
   final String hours;
+  final int total_price;
+  final String vehiclePlate;
   final int pricePerHour;
 
   const ReviewBookingPage({
     super.key,
-    required this.parkingArea,
-    required this.address,
-    required this.vehicle,
-    required this.parkingSpot,
+    required this.kodeslot,
+    required this.id_lahan,
+    required this.carid,
     required this.date,
     required this.duration,
     required this.hours,
+    required this.total_price,
+    required this.vehiclePlate,
     required this.pricePerHour,
   });
 
@@ -28,57 +34,175 @@ class ReviewBookingPage extends StatefulWidget {
 }
 
 class _ReviewBookingPageState extends State<ReviewBookingPage> {
-  String selectedPayment = 'gopay';
+  String? parkingArea;
+  String? address;
+  String? vehicleName;
+  bool _isLoading = true;
+  bool _isCreatingOrder = false;
+  String? _idAkun;
 
-  final List<String> paymentMethods = ['gopay', 'ovo', 'dana'];
+  final currencyFormatter = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
 
-  Map<String, Map<String, dynamic>> paymentInfo = {
-    'gopay': {
-      'name': 'GoPay',
-      'color': Color(0xFF00AA13),
-      'icon': Icons.account_balance_wallet_rounded,
-    },
-    'ovo': {
-      'name': 'OVO',
-      'color': Color(0xFF4B0082),
-      'icon': Icons.account_balance_wallet_rounded,
-    },
-    'dana': {
-      'name': 'DANA',
-      'color': Color(0xFF008FE5),
-      'icon': Icons.account_balance_wallet_rounded,
-    },
-  };
+  @override
+  void initState() {
+    super.initState();
+    _fetchPageDetails();
+  }
+
+  Future<void> _fetchPageDetails() async {
+    try {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      _idAkun = prefs.getInt('id_akun')?.toString();
+
+      await Future.wait([
+        _fetchLahanDetails(),
+        _fetchVehicleDetails(),
+      ]);
+    } catch (e) {
+      print("Error fetching page details: $e");
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _fetchLahanDetails() async {
+    try {
+      final response = await http.get(Uri.parse('https://app.parkintime.web.id/flutter/get_lahan.php'));
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body)['data'];
+        final lahanData = data.firstWhere((l) => l['id'].toString() == widget.id_lahan, orElse: () => null);
+        if (lahanData != null && mounted) {
+          setState(() {
+            parkingArea = lahanData['nama_lokasi'];
+            address = lahanData['alamat'];
+          });
+        }
+      }
+    } catch (e) {
+      print("Error fetching lahan: $e");
+    }
+  }
+
+  Future<void> _fetchVehicleDetails() async {
+    try {
+      if (_idAkun == null) return;
+
+      final response = await http.get(Uri.parse('https://app.parkintime.web.id/flutter/get_car.php?id_akun=$_idAkun'));
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body)['data'];
+        final carData = data.firstWhere((c) => c['id'].toString() == widget.carid, orElse: () => null);
+        if (carData != null && mounted) {
+          setState(() {
+            vehicleName = "${carData['merek'] ?? ''} ${carData['tipe'] ?? ''}".trim();
+          });
+        }
+      }
+    } catch (e) {
+      print("Error fetching vehicle: $e");
+    }
+  }
+
+  Future<void> _createBookingAndPay() async {
+    if (_idAkun == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('User not logged in.'), backgroundColor: Colors.red),
+      );
+      return;
+    }
+
+    setState(() {
+      _isCreatingOrder = true;
+    });
+
+    http.Response? response; // Variabel untuk menyimpan response
+
+    try {
+      final url = Uri.parse('https://app.parkintime.web.id/flutter/create_booking.php');
+
+      final requestBody = {
+        'id_akun': _idAkun,
+        'id_slot': widget.kodeslot,
+        'durasi': widget.duration.split(' ')[0],
+        'biaya_total': widget.total_price,
+        'waktu_masuk': "${widget.date} ${widget.hours.split(' - ')[0]}:00",
+      };
+
+      response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(requestBody),
+      );
+
+      if (response.statusCode == 200) {
+        final responseData = jsonDecode(response.body);
+        if (responseData['success'] == true) {
+          final String redirectUrl = responseData['redirect_url'];
+
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => PaymentWebViewPage(
+                paymentUrl: redirectUrl,
+              ),
+            ),
+          );
+        } else {
+          throw Exception(responseData['message'] ?? 'Failed to create booking.');
+        }
+      } else {
+        throw Exception('Server Error. Status Code: ${response.statusCode}');
+      }
+
+    } catch (e) {
+      // --- PERUBAHAN UNTUK DEBUGGING ---
+      String errorMessage = e.toString();
+      // Jika errornya adalah FormatException, tampilkan seluruh body response dari server
+      if (e is FormatException && response != null) {
+        errorMessage = "Failed to parse JSON. Server Response:\n${response.body}";
+      }
+
+      print("--- ERROR LOG ---");
+      print(errorMessage);
+      print("--- END ERROR LOG ---");
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(errorMessage), backgroundColor: Colors.red),
+      );
+    } finally {
+      setState(() {
+        _isCreatingOrder = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    int durationInHours = int.tryParse(widget.duration.split(' ').first) ?? 1;
-    int totalPrice = durationInHours * widget.pricePerHour;
-
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Review Booking'),
+        title: const Text('Review & Create Booking'),
         backgroundColor: Colors.green,
         foregroundColor: Colors.white,
       ),
-      body: SingleChildScrollView(
+      body: _isLoading
+          ? Center(child: CircularProgressIndicator(color: Colors.green))
+          : SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // --- Detail Info ---
             Container(
               padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-              ),
+              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
               child: Column(
                 children: [
-                  buildDetailRow('Parking Area', widget.parkingArea),
-                  buildDetailRow('Address', widget.address),
-                  buildDetailRow('Vehicle', widget.vehicle),
-                  buildDetailRow('Parking Spot', widget.parkingSpot),
+                  buildDetailRow('Parking Area', parkingArea ?? 'Loading...'),
+                  buildDetailRow('Address', address ?? 'Loading...'),
+                  buildDetailRow('Vehicle Plate', widget.vehiclePlate),
+                  buildDetailRow('Vehicle', vehicleName ?? 'Loading...'),
+                  buildDetailRow('Parking Spot', widget.kodeslot),
                   buildDetailRow('Date', widget.date),
                   buildDetailRow('Duration', widget.duration),
                   buildDetailRow('Hours', widget.hours),
@@ -86,242 +210,60 @@ class _ReviewBookingPageState extends State<ReviewBookingPage> {
               ),
             ),
             const SizedBox(height: 20),
-
-            // --- Price Info ---
             Container(
               padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-              ),
+              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
               child: Column(
                 children: [
-                  buildDetailRow('Amount', 'Rp ${widget.pricePerHour}'),
-                  buildDetailRow('Duration', '${widget.duration}'),
+                  buildDetailRow('Amount', currencyFormatter.format(widget.pricePerHour), isPrice: true),
+                  buildDetailRow('Duration', widget.duration),
                   const Divider(),
-                  buildDetailRow('Total', 'Rp $totalPrice', isBold: true),
+                  buildDetailRow('Total', currencyFormatter.format(widget.total_price), isBold: true, isPrice: true),
                 ],
-              ),
-            ),
-            const SizedBox(height: 20),
-
-            // --- Payment Method ---
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      CircleAvatar(
-                        radius: 16,
-                        backgroundColor: paymentInfo[selectedPayment]!['color'],
-                        child: Icon(
-                          paymentInfo[selectedPayment]!['icon'],
-                          color: Colors.white,
-                          size: 18,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        paymentInfo[selectedPayment]!['name'],
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
-                      ),
-                    ],
-                  ),
-                  TextButton(
-                    onPressed: () {
-                      showModalBottomSheet(
-                        context: context,
-                        shape: const RoundedRectangleBorder(
-                          borderRadius: BorderRadius.vertical(
-                            top: Radius.circular(20),
-                          ),
-                        ),
-                        builder: (context) {
-                          return ListView(
-                            shrinkWrap: true,
-                            children:
-                                paymentMethods.map((method) {
-                                  return ListTile(
-                                    leading: CircleAvatar(
-                                      radius: 18,
-                                      backgroundColor:
-                                          paymentInfo[method]!['color'],
-                                      child: Icon(
-                                        paymentInfo[method]!['icon'],
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                    title: Text(
-                                      paymentInfo[method]!['name'],
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    onTap: () {
-                                      setState(() {
-                                        selectedPayment = method;
-                                      });
-                                      Navigator.pop(context);
-                                    },
-                                  );
-                                }).toList(),
-                          );
-                        },
-                      );
-                    },
-                    child: const Text(
-                      'Change',
-                      style: TextStyle(color: Colors.green),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 20),
-
-            // --- Confirm Button ---
-            SizedBox(
-              width: double.infinity,
-              height: 55,
-              child: ElevatedButton(
-                onPressed: () {
-                  showDialog(
-                    context: context,
-                    barrierDismissible: false, // supaya harus pilih tombol
-                    builder: (context) {
-                      return Dialog(
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Container(
-                          padding: const EdgeInsets.all(24),
-                          decoration: BoxDecoration(
-                            color: Colors.green.shade50,
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Stack(
-                                alignment: Alignment.center,
-                                children: [
-                                  Container(
-                                    width: 80,
-                                    height: 80,
-                                    decoration: BoxDecoration(
-                                      color: Colors.green,
-                                      shape: BoxShape.circle,
-                                    ),
-                                  ),
-                                  const Icon(
-                                    Icons.check,
-                                    color: Colors.white,
-                                    size: 40,
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 20),
-                              const Text(
-                                'Successful',
-                                style: TextStyle(
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.green,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              const Text(
-                                'Successfully made payment for\nyour parking',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(fontSize: 16),
-                              ),
-                              const SizedBox(height: 24),
-                              SizedBox(
-                                width: double.infinity,
-                                child: ElevatedButton(
-                                  onPressed: () {
-                                    Navigator.pop(context); // Tutup dialog
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder:
-                                            (context) => const TicketPage(),
-                                      ),
-                                    );
-                                  },
-
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.green,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                  ),
-                                  child: const Text('View Parking Ticket'),
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              SizedBox(
-                                width: double.infinity,
-                                child: ElevatedButton(
-                                  onPressed: () {
-                                    Navigator.pop(context); // Tutup popup
-                                  },
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.grey,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                  ),
-                                  child: const Text('Cancel'),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  );
-                },
-
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                ),
-                child: const Text(
-                  'Confirm Booking',
-                  style: TextStyle(fontSize: 18),
-                ),
               ),
             ),
           ],
         ),
       ),
-      backgroundColor: const Color(0xFFF6F6F6),
+      bottomNavigationBar: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: SizedBox(
+          width: double.infinity,
+          height: 55,
+          child: ElevatedButton(
+            onPressed: _isCreatingOrder ? null : _createBookingAndPay,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green,
+              disabledBackgroundColor: Colors.green.shade300,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            ),
+            child: _isCreatingOrder
+                ? CircularProgressIndicator(color: Colors.white)
+                : const Text('Create Order & Continue', style: TextStyle(fontSize: 18, color: Colors.white)),
+          ),
+        ),
+      ),
     );
   }
 
-  Widget buildDetailRow(String title, String value, {bool isBold = false}) {
+  Widget buildDetailRow(String title, String value, {bool isBold = false, bool isPrice = false}) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
+      padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Text(title),
-          Text(
-            value,
-            style: TextStyle(
-              fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
+          Text(title, style: TextStyle(color: Colors.grey.shade600)),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Text(
+              value,
+              textAlign: TextAlign.end,
+              overflow: isPrice ? TextOverflow.visible : TextOverflow.ellipsis,
+              maxLines: isPrice ? null : 1,
+              style: TextStyle(
+                fontWeight: isBold ? FontWeight.bold : FontWeight.w600,
+                fontSize: isBold ? 16 : 14,
+              ),
             ),
           ),
         ],

@@ -5,7 +5,8 @@ import 'package:http/http.dart' as http;
 class InformationSpotPage extends StatefulWidget {
   final String id_lahan;
 
-  const InformationSpotPage({Key? key, required this.id_lahan}) : super(key: key);
+  const InformationSpotPage({Key? key, required this.id_lahan})
+    : super(key: key);
 
   @override
   _InformationSpotPageState createState() => _InformationSpotPageState();
@@ -45,13 +46,15 @@ class _InformationSpotPageState extends State<InformationSpotPage> {
   Future<void> fetchSlotsByLahan(String idLahan) async {
     try {
       final response = await http.get(
-        Uri.parse('https://app.parkintime.web.id/flutter/get_slot.php?id_lahan=$idLahan'),
+        Uri.parse(
+          'https://app.parkintime.web.id/flutter/get_slot.php?id_lahan=$idLahan',
+        ),
       );
 
       if (response.statusCode == 200) {
         final List<dynamic> slotJson = json.decode(response.body);
         final List<SlotParkir> fetchedSlots =
-        slotJson.map((json) => SlotParkir.fromJson(json)).toList();
+            slotJson.map((json) => SlotParkir.fromJson(json)).toList();
 
         final Set<String> areaSet = fetchedSlots.map((e) => e.area).toSet();
 
@@ -68,16 +71,19 @@ class _InformationSpotPageState extends State<InformationSpotPage> {
     }
   }
 
-  List<SlotParkir> get filteredSlots => selectedArea == null
-      ? []
-      : allSlots.where((slot) => slot.area == selectedArea).toList();
+  List<SlotParkir> get filteredSlots =>
+      selectedArea == null
+          ? []
+          : allSlots.where((slot) => slot.area == selectedArea).toList();
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Color.fromARGB(255, 231, 229, 229), // ✅ Ubah background halaman
       appBar: AppBar(
         toolbarHeight: 100,
-        backgroundColor: Color(0xFF2ECC40),
+        backgroundColor: Color(0xFF629584),
+        centerTitle: true, // ✅ Tengahin judul
         title: Text(
           'Information Spot',
           style: TextStyle(
@@ -87,7 +93,11 @@ class _InformationSpotPageState extends State<InformationSpotPage> {
           ),
         ),
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: Colors.white),
+          icon: Icon(
+            Icons.arrow_back_rounded,
+            color: Colors.white,
+            size: 28,
+          ), // ✅ Icon back lebih tebal
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -95,44 +105,43 @@ class _InformationSpotPageState extends State<InformationSpotPage> {
         children: [
           Container(
             padding: EdgeInsets.symmetric(vertical: 16),
-            color: Colors.white,
+            color: const Color.fromARGB(255, 234, 230, 230),
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               padding: EdgeInsets.symmetric(horizontal: 8),
               child: Row(
-                children: uniqueAreas.map((area) {
-                  final isSelected = area == selectedArea;
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4),
-                    child: ElevatedButton(
-                      onPressed: () {
-                        setState(() {
-                          selectedArea = area;
-                        });
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor:
-                        isSelected ? Color(0xFF2ECC40) : Colors.white,
-                        foregroundColor:
-                        isSelected ? Colors.white : Colors.black,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20),
-                          side: BorderSide(color: Color(0xFF2ECC40)),
+                children:
+                    uniqueAreas.map((area) {
+                      final isSelected = area == selectedArea;
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        child: ElevatedButton(
+                          onPressed: () {
+                            setState(() {
+                              selectedArea = area;
+                            });
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor:
+                                isSelected ? Color(0xFF2ECC40) : Colors.white,
+                            foregroundColor:
+                                isSelected ? Colors.white : Colors.black,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20),
+                              side: BorderSide(color: Color(0xFF2ECC40)),
+                            ),
+                          ),
+                          child: Text('$area'),
                         ),
-                      ),
-                      child: Text('$area'),
-                    ),
-                  );
-                }).toList(),
+                      );
+                    }).toList(),
               ),
             ),
           ),
           Expanded(
             child: SingleChildScrollView(
               padding: EdgeInsets.all(16),
-              child: Column(
-                children: buildSlotWidgets(),
-              ),
+              child: Column(children: buildSlotWidgets()),
             ),
           ),
         ],
@@ -144,7 +153,8 @@ class _InformationSpotPageState extends State<InformationSpotPage> {
     List<Widget> widgets = [];
     for (int i = 0; i < filteredSlots.length; i += 2) {
       final first = filteredSlots[i];
-      final second = (i + 1 < filteredSlots.length) ? filteredSlots[i + 1] : null;
+      final second =
+          (i + 1 < filteredSlots.length) ? filteredSlots[i + 1] : null;
 
       widgets.add(
         _buildParkingRow(

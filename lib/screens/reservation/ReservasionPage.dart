@@ -33,28 +33,29 @@ class _ReservasionpageState extends State<Reservasionpage> {
       final body = jsonDecode(response.body);
       if (body['success']) {
         final List<dynamic> data = body['data'];
-        final processed = data.map((e) {
-          int kapasitas = int.tryParse(e['kapasitas'].toString()) ?? 0;
-          int terisi = int.tryParse(e['terisi'].toString()) ?? 0;
-          String status = "Tersedia";
-          double persen = terisi / kapasitas;
+        final processed =
+            data.map((e) {
+              int kapasitas = int.tryParse(e['kapasitas'].toString()) ?? 0;
+              int terisi = int.tryParse(e['terisi'].toString()) ?? 0;
+              String status = "Tersedia";
+              double persen = terisi / kapasitas;
 
-          if (persen >= 1.0) {
-            status = "Penuh";
-          } else if (persen >= 0.9) {
-            status = "Hampir Penuh";
-          }
+              if (persen >= 1.0) {
+                status = "Penuh";
+              } else if (persen >= 0.9) {
+                status = "Hampir Penuh";
+              }
 
-          return {
-            "id": e['id'],
-            "name": e['nama_lokasi'],
-            "address": e['alamat'],
-            "price": "Rp ${e['tarif_per_jam']}",
-            "capacity": "$terisi/$kapasitas",
-            "status": status,
-            "foto": e['foto'],
-          };
-        }).toList();
+              return {
+                "id": e['id'],
+                "name": e['nama_lokasi'],
+                "address": e['alamat'],
+                "price": "Rp ${e['tarif_per_jam']}",
+                "capacity": "$terisi/$kapasitas",
+                "status": status,
+                "foto": e['foto'],
+              };
+            }).toList();
 
         setState(() {
           allParkingData = processed;
@@ -68,10 +69,11 @@ class _ReservasionpageState extends State<Reservasionpage> {
   }
 
   void _filterSearchResults(String query) {
-    final filtered = allParkingData.where((item) {
-      final name = item["name"].toString().toLowerCase();
-      return name.contains(query.toLowerCase());
-    }).toList();
+    final filtered =
+        allParkingData.where((item) {
+          final name = item["name"].toString().toLowerCase();
+          return name.contains(query.toLowerCase());
+        }).toList();
 
     setState(() {
       parkingData = filtered;
@@ -115,149 +117,179 @@ class _ReservasionpageState extends State<Reservasionpage> {
     return Scaffold(
       backgroundColor: const Color(0xFFF2F2F2),
       appBar: AppBar(
-        backgroundColor: Color(0xFF2ECC40),
-        elevation: 0,
-        title: const Text('Reservation', style: TextStyle(color: Colors.white)),
+        backgroundColor: Color(0xFF629584),
+         centerTitle: true, // ✅ Tengahin judul
+        title: Text(
+          'Reservasion',
+          style: TextStyle(
+            fontSize: 20,
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: Colors.white),
+          icon: Icon(
+            Icons.arrow_back_rounded,
+            color: Colors.white,
+            size: 28,
+          ), // ✅ Icon back lebih tebal
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: isLoading
-          ? Center(child: CircularProgressIndicator())
-          : Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            color: Color(0xFF2ECC40),
-            child: TextField(
-              controller: _searchController,
-              onChanged: _filterSearchResults,
-              decoration: InputDecoration(
-                hintText: 'Search parking location..',
-                filled: true,
-                fillColor: Colors.white,
-                prefixIcon: Icon(Icons.search),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(30),
-                  borderSide: BorderSide.none,
-                ),
-              ),
-            ),
-          ),
-          Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: parkingData.length,
-              itemBuilder: (context, index) {
-                final item = parkingData[index];
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 16),
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.grey.withOpacity(0.2),
-                        blurRadius: 5,
-                        offset: Offset(0, 2),
+      body:
+          isLoading
+              ? Center(child: CircularProgressIndicator())
+              : Column(
+                children: [
+                  Container(
+                    height: 85,
+                    padding: const EdgeInsets.all(16),
+                    color: Color(0xFF629584),
+                    child: TextField(
+                      controller: _searchController,
+                      onChanged: _filterSearchResults,
+                      decoration: InputDecoration(
+                        hintText: 'Search parking location..',
+                        filled: true,
+                        fillColor: Colors.white,
+                        prefixIcon: Icon(Icons.search),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(30),
+                          borderSide: BorderSide.none,
+                        ),
                       ),
-                    ],
+                    ),
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment:
-                        MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(item["name"],
-                              style: TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 16)),
-                          Container(
-                            padding: EdgeInsets.symmetric(
-                                vertical: 4, horizontal: 8),
-                            decoration: BoxDecoration(
-                              color: _statusColor(item["status"]),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Text(
-                              item["status"],
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                color: _statusTextColor(item["status"]),
+                  Expanded(
+                    child: ListView.builder(
+                      padding: const EdgeInsets.all(16),
+                      itemCount: parkingData.length,
+                      itemBuilder: (context, index) {
+                        final item = parkingData[index];
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 16),
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.grey.withOpacity(0.2),
+                                blurRadius: 5,
+                                offset: Offset(0, 2),
                               ),
-                            ),
+                            ],
                           ),
-                        ],
-                      ),
-                      SizedBox(height: 4),
-                      Text(
-                        _limitWords(item["address"], 6),
-                        style: TextStyle(color: Colors.grey[700]),
-                      ),
-                      SizedBox(height: 12),
-                      Row(
-                        mainAxisAlignment:
-                        MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text("Hourly rate\n${item["price"]}",
-                              style: TextStyle(fontSize: 13)),
-                          Text("Capacity\n${item["capacity"]}",
-                              style: TextStyle(fontSize: 13)),
-                        ],
-                      ),
-                      SizedBox(height: 12),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: ElevatedButton(
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) => ParkingLotDetailPage(
-                                        id_lahan: item["id"]), // kirim ID
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    item["name"],
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 16,
+                                    ),
                                   ),
-                                );
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Color(0xFF2ECC40),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
+                                  Container(
+                                    padding: EdgeInsets.symmetric(
+                                      vertical: 4,
+                                      horizontal: 8,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: _statusColor(item["status"]),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Text(
+                                      item["status"],
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                        color: _statusTextColor(item["status"]),
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
-                              child: Text("Select"),
-                            ),
+                              SizedBox(height: 4),
+                              Text(
+                                _limitWords(item["address"], 6),
+                                style: TextStyle(color: Colors.grey[700]),
+                              ),
+                              SizedBox(height: 12),
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    "Hourly rate\n${item["price"]}",
+                                    style: TextStyle(fontSize: 13),
+                                  ),
+                                  Text(
+                                    "Capacity\n${item["capacity"]}",
+                                    style: TextStyle(fontSize: 13),
+                                  ),
+                                ],
+                              ),
+                              SizedBox(height: 12),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: ElevatedButton(
+                                      onPressed: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder:
+                                                (_) => ParkingLotDetailPage(
+                                                  id_lahan: item["id"],
+                                                ), // kirim ID
+                                          ),
+                                        );
+                                      },
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Color(0xFF2ECC40),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            6,
+                                          ),
+                                        ),
+                                      ),
+                                      child: Text("Select"),
+                                    ),
+                                  ),
+                                  SizedBox(width: 12),
+                                  IconButton(
+                                    icon: Icon(
+                                      Icons.navigation,
+                                      color: Colors.green,
+                                    ),
+                                    onPressed: () {},
+                                  ),
+                                  IconButton(
+                                    icon: Icon(
+                                      Icons.share,
+                                      color: Colors.green,
+                                    ),
+                                    onPressed: () {
+                                      final message =
+                                          "Parkir tersedia di ${item["name"]}, alamat: ${item["address"]}, tarif: ${item["price"]}, kapasitas: ${item["capacity"]}.";
+                                      Share.share(message);
+                                    },
+                                  ),
+                                ],
+                              ),
+                            ],
                           ),
-                          SizedBox(width: 12),
-                          IconButton(
-                            icon: Icon(Icons.navigation,
-                                color: Colors.green),
-                            onPressed: () {},
-                          ),
-                          IconButton(
-                            icon:
-                            Icon(Icons.share, color: Colors.green),
-                            onPressed: () {
-                              final message =
-                                  "Parkir tersedia di ${item["name"]}, alamat: ${item["address"]}, tarif: ${item["price"]}, kapasitas: ${item["capacity"]}.";
-                              Share.share(message);
-                            },
-                          ),
-                        ],
-                      ),
-                    ],
+                        );
+                      },
+                    ),
                   ),
-                );
-              },
-            ),
-          ),
-        ],
-      ),
+                ],
+              ),
     );
   }
 }

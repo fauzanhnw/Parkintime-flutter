@@ -21,9 +21,9 @@ class _LoginScreenState extends State<LoginScreen> {
     final String password = passwordController.text.trim();
 
     if (email.isEmpty || password.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Please fill in all fields')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Please fill in all fields')));
       return;
     }
 
@@ -55,31 +55,29 @@ class _LoginScreenState extends State<LoginScreen> {
                   position: Tween<Offset>(
                     begin: Offset(1.0, 0.0),
                     end: Offset.zero,
-                  ).animate(CurvedAnimation(
-                    parent: animation,
-                    curve: Curves.ease,
-                  )),
+                  ).animate(
+                    CurvedAnimation(parent: animation, curve: Curves.ease),
+                  ),
                   child: child,
                 );
               },
             ),
           );
-        }
-        else {
+        } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(data['message'] ?? 'Login failed')),
           );
         }
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Server error')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Server error')));
       }
     } catch (e) {
       setState(() => _isLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Tidak bisa terhubung ke server')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Tidak bisa terhubung ke server')));
     }
   }
 
@@ -118,8 +116,10 @@ class _LoginScreenState extends State<LoginScreen> {
                   height: MediaQuery.of(context).size.height * 0.6,
                   padding: EdgeInsets.symmetric(horizontal: 25, vertical: 30),
                   decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+                    color: const Color.fromARGB(255, 244, 240, 240),
+                    borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(30),
+                    ),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black26,
@@ -133,7 +133,10 @@ class _LoginScreenState extends State<LoginScreen> {
                     children: [
                       Text(
                         "Sign In to Your\nAccount",
-                        style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          fontSize: 26,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       SizedBox(height: 20),
                       TextField(
@@ -163,9 +166,14 @@ class _LoginScreenState extends State<LoginScreen> {
                           prefixIcon: Icon(Icons.lock),
                           suffixIcon: IconButton(
                             icon: Icon(
-                              _obscureText ? Icons.visibility_off : Icons.visibility,
+                              _obscureText
+                                  ? Icons.visibility_off
+                                  : Icons.visibility,
                             ),
-                            onPressed: () => setState(() => _obscureText = !_obscureText),
+                            onPressed:
+                                () => setState(
+                                  () => _obscureText = !_obscureText,
+                                ),
                           ),
                         ),
                       ),
@@ -173,34 +181,46 @@ class _LoginScreenState extends State<LoginScreen> {
                       _isLoading
                           ? Center(child: CircularProgressIndicator())
                           : SizedBox(
-                        width: double.infinity,
-                        height: 50,
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.green,
-                            shape: StadiumBorder(),
+                            width: double.infinity,
+                            height: 50,
+                            child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.green,
+                                shape: StadiumBorder(),
+                              ),
+                              onPressed: login,
+                              child: Text(
+                                "Sign In",
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
                           ),
-                          onPressed: login,
-                          child: Text(
-                            "Sign In",
-                            style: TextStyle(fontSize: 18, color: Colors.white),
-                          ),
-                        ),
-                      ),
                       SizedBox(height: 15),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           TextButton(
                             onPressed: () {},
-                            child: Text("Forgot Password?", style: TextStyle(color: Colors.green)),
+                            child: Text(
+                              "Forgot Password?",
+                              style: TextStyle(color: Colors.green),
+                            ),
                           ),
                           TextButton(
-                            onPressed: () => Navigator.push(
-                              context,
-                              MaterialPageRoute(builder: (_) => RegisterScreen()),
+                            onPressed:
+                                () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => RegisterScreen(),
+                                  ),
+                                ),
+                            child: Text(
+                              "Create Account",
+                              style: TextStyle(color: Colors.green),
                             ),
-                            child: Text("Create Account", style: TextStyle(color: Colors.green)),
                           ),
                         ],
                       ),

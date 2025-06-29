@@ -80,7 +80,7 @@ class _ManageVehiclePageState extends State<ManageVehiclePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF2F2F2),
+      backgroundColor: const Color.fromARGB(255, 228, 225, 225),
       body: Column(
         children: [
           _buildHeader(),
@@ -125,7 +125,7 @@ class _ManageVehiclePageState extends State<ManageVehiclePage> {
     return Container(
       height: 120,
       padding: const EdgeInsets.only(top: 40, left: 16, right: 16),
-      decoration: const BoxDecoration(color: Color(0xFF2ECC40)),
+      decoration: const BoxDecoration(color: Color(0xFF629584)),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [

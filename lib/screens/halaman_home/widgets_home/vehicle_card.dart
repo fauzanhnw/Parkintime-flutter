@@ -7,6 +7,7 @@ class VehicleCard extends StatelessWidget {
   final String color;
 
   const VehicleCard({
+    super.key,
     required this.plate,
     required this.brand,
     required this.type,
@@ -16,9 +17,9 @@ class VehicleCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 350, // atau ukuran sesuai desain kamu
+      width: 320,
       child: Container(
-        margin: const EdgeInsets.only(right: 12), // spasi antar card
+        margin: const EdgeInsets.only(right: 12),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: Colors.white,
@@ -28,26 +29,49 @@ class VehicleCard extends StatelessWidget {
               color: Colors.black12,
               blurRadius: 6,
               offset: Offset(0, 3),
-            )
+            ),
           ],
         ),
         child: Row(
           children: [
+            // Gambar mobil
             Image.asset(
-              'assets/car.png',
-              width: 60,
-              height: 60,
+              'assets/car.png', // Ganti dengan path gambar Anda
+              width: 50,
+              height: 50,
               fit: BoxFit.contain,
             ),
 
             const SizedBox(width: 12),
-            Flexible(
+
+            // Garis vertikal pemisah
+            Container(width: 1, height: 50, color: Colors.grey[300]),
+
+            const SizedBox(width: 12),
+
+            // Informasi kendaraan
+            Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(plate, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                  Text("$brand $type", style: const TextStyle(color: Colors.black54)),
-                  Text("$color", style: const TextStyle(color: Colors.black54)),
+                  Text(
+                    "$brand $type".toUpperCase(),
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    plate.toUpperCase(),
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: Colors.green,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -56,5 +80,4 @@ class VehicleCard extends StatelessWidget {
       ),
     );
   }
-
 }

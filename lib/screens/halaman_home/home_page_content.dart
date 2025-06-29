@@ -4,12 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 
-import 'widgets_home/Feature_item.dart';
-import 'widgets_home/vehicle_card.dart';
 import 'package:parkintime/screens/my_car/mycar_page.dart';
-import 'package:parkintime/screens/checklot/checklotpage.dart';
 import 'package:parkintime/screens/reservation/ReservasionPage.dart';
-import 'package:parkintime/screens/ticket_page.dart';
+
+import 'widgets_home/vehicle_card.dart';
 
 class HomePageContent extends StatefulWidget {
   @override
@@ -55,7 +53,9 @@ class _HomePageContentState extends State<HomePageContent> {
       final idAkun = prefs.getInt('id_akun') ?? 0;
 
       final response = await http.get(
-        Uri.parse('https://app.parkintime.web.id/flutter/profile.php?id_akun=$idAkun'),
+        Uri.parse(
+          'https://app.parkintime.web.id/flutter/profile.php?id_akun=$idAkun',
+        ),
       );
 
       if (response.statusCode == 200) {
@@ -63,18 +63,20 @@ class _HomePageContentState extends State<HomePageContent> {
         if (data['success'] == true) {
           final fullName = data['nama_lengkap'] ?? 'User';
           final trimmedName = _limitWords(_capitalizeEachWord(fullName), 3);
-          setState(() {
-            _userName = trimmedName;
-          });
+          if (mounted) {
+            setState(() {
+              _userName = trimmedName;
+            });
+          }
         } else {
-          setState(() => _userName = 'User');
+          if (mounted) setState(() => _userName = 'User');
         }
       } else {
-        setState(() => _userName = 'User');
+        if (mounted) setState(() => _userName = 'User');
       }
     } catch (e) {
       print("Error fetching user name: $e");
-      setState(() => _userName = 'User');
+      if (mounted) setState(() => _userName = 'User');
     }
   }
 
@@ -84,16 +86,20 @@ class _HomePageContentState extends State<HomePageContent> {
       final idAkun = prefs.getInt('id_akun') ?? 0;
 
       final response = await http.get(
-        Uri.parse('https://app.parkintime.web.id/flutter/get_car.php?id_akun=$idAkun'),
+        Uri.parse(
+          'https://app.parkintime.web.id/flutter/get_car.php?id_akun=$idAkun',
+        ),
       );
 
       if (response.statusCode == 200) {
         final result = json.decode(response.body);
         if (result['status']) {
-          setState(() {
-            vehicles.clear();
-            vehicles.addAll(List<Map<String, dynamic>>.from(result['data']));
-          });
+          if (mounted) {
+            setState(() {
+              vehicles.clear();
+              vehicles.addAll(List<Map<String, dynamic>>.from(result['data']));
+            });
+          }
         }
       }
     } catch (e) {
@@ -110,9 +116,11 @@ class _HomePageContentState extends State<HomePageContent> {
       if (response.statusCode == 200) {
         final result = json.decode(response.body);
         if (result['success'] == true) {
-          setState(() {
-            parkingLots = List<Map<String, dynamic>>.from(result['data']);
-          });
+          if (mounted) {
+            setState(() {
+              parkingLots = List<Map<String, dynamic>>.from(result['data']);
+            });
+          }
         }
       }
     } catch (e) {
@@ -130,39 +138,57 @@ class _HomePageContentState extends State<HomePageContent> {
   String _limitWords(String text, int maxWords) {
     final words = text.split(' ');
     if (words.length <= maxWords) return text;
-    return words.sublist(0, maxWords).join(' ') + '...';
+    return words.sublist(0, maxWords).join(' ');
   }
 
   @override
   Widget build(BuildContext context) {
+    // Perkirakan tinggi kartu reservasi agar SizedBox bisa disesuaikan
+    // Kartu ini memiliki padding, text, dan button. Kira-kira tingginya ~160px.
+    // Kita ingin setengahnya tumpang tindih, jadi kita butuh ruang ekstra ~80px.
+    const double cardOverlap = 80.0;
+
     return SafeArea(
       child: RefreshIndicator(
         onRefresh: _handleRefresh,
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  _buildHeader(),
-                  Positioned(
-                    bottom: -40,
-                    left: 20,
-                    right: 20,
-                    child: _buildFeatureMenu(context),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 60),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: _buildMyCarSection(context),
-              ),
-              const SizedBox(height: 45),
-              _buildParkingSpotSection(),
-            ],
+        child: Container(
+          height: double.infinity,
+          color: const Color.fromARGB(255, 230, 227, 227),
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // === PERUBAHAN UTAMA DI SINI ===
+                Stack(
+                  children: [
+                    // Widget Column ini sekarang mendefinisikan ukuran Stack
+                    Column(
+                      children: [
+                        _buildHeader(),
+                        // Beri ruang kosong di bawah header seukuran tumpang tindih kartu
+                        const SizedBox(height: cardOverlap),
+                      ],
+                    ),
+                    // Sekarang posisikan kartu di bagian bawah Stack yang sudah diperluas
+                    Positioned(
+                      bottom: 0, // Posisikan di bagian bawah ruang yang baru dibuat
+                      left: 20,
+                      right: 20,
+                      child: _buildReservationCard(),
+                    ),
+                  ],
+                ),
+                // Sesuaikan SizedBox agar jarak konten di bawahnya pas
+                const SizedBox(height: 20),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: _buildMyCarSection(context),
+                ),
+                const SizedBox(height: 45),
+                _buildParkingSpotSection(),
+              ],
+            ),
           ),
         ),
       ),
@@ -170,10 +196,11 @@ class _HomePageContentState extends State<HomePageContent> {
   }
 
   Widget _buildHeader() {
+    // Padding bawah header dikurangi karena ruang ekstra sekarang diatur oleh SizedBox di dalam Stack
     return Container(
       width: double.infinity,
-      color: Color(0xFF2ECC40),
-      padding: const EdgeInsets.only(top: 20, left: 20, right: 20, bottom: 100),
+      color: Color(0xFF629584),
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 80), // Sesuaikan padding bawah
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -199,45 +226,80 @@ class _HomePageContentState extends State<HomePageContent> {
     );
   }
 
-  Widget _buildFeatureMenu(BuildContext context) {
+  Widget _buildReservationCard() {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 20),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color.fromARGB(255, 202, 225, 238),
+        color: Color(0xFFD9EAE8),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black26,
+            color: Colors.black.withOpacity(0.1),
+            spreadRadius: 1,
             blurRadius: 10,
-            offset: Offset(0, 4),
+            offset: Offset(0, 5),
           ),
         ],
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      child: Column(
         children: [
-          FeatureItem(
-            imagePath: 'assets/chek.png',
-            title: "Check Lot",
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => CheckLotPage()),
-            ),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "Make a Reservation",
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      "Book your parking spot now",
+                      style: TextStyle(fontSize: 14, color: Colors.black54),
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(width: 16),
+              Container(
+                padding: EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.8),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  Icons.calendar_today_outlined,
+                  color: Colors.blueGrey[600],
+                ),
+              ),
+            ],
           ),
-          FeatureItem(
-            imagePath: 'assets/reservation.png',
-            title: "Reservation",
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => Reservasionpage()),
-            ),
-          ),
-          FeatureItem(
-            imagePath: 'assets/tik.png',
-            title: "Ticket",
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => TicketPage()),
+          SizedBox(height: 20),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => Reservasionpage()),
+                );
+              },
+              child: Text("Reserve Now"),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.white,
+                foregroundColor: Colors.black87,
+                padding: EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                elevation: 2,
+              ),
             ),
           ),
         ],
@@ -269,9 +331,9 @@ class _HomePageContentState extends State<HomePageContent> {
               child: const Text(
                 "Manage Vehicle",
                 style: TextStyle(
-                  fontSize: 14,
-                  color: Color(0xFF2ECC40),
-                  fontWeight: FontWeight.w600,
+                  fontSize: 15,
+                  color: Color.fromARGB(255, 236, 63, 43),
+                  fontWeight: FontWeight.bold,
                 ),
               ),
             ),
@@ -282,10 +344,9 @@ class _HomePageContentState extends State<HomePageContent> {
             ? Container(
           width: double.infinity,
           constraints: BoxConstraints(
-            minHeight: 100, // Tinggi minimum
-            // maxHeight: 150, // Opsional: tinggi maksimum
+            minHeight: 100,
           ),
-          padding: const EdgeInsets.all(2),
+          padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(12),
@@ -316,7 +377,7 @@ class _HomePageContentState extends State<HomePageContent> {
           ),
         )
             : SizedBox(
-          height: 100, // pastikan ini cukup untuk menampung tinggi card
+          height: 100,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             itemCount: vehicles.length,
@@ -332,7 +393,6 @@ class _HomePageContentState extends State<HomePageContent> {
             },
           ),
         ),
-
       ],
     );
   }
@@ -391,7 +451,7 @@ class _HomePageContentState extends State<HomePageContent> {
             height: 100,
             decoration: BoxDecoration(
               image: DecorationImage(
-                image: (foto != null && foto.isNotEmpty)
+                image: (foto.isNotEmpty)
                     ? NetworkImage('https://app.parkintime.web.id/foto/$foto')
                     : AssetImage("assets/spot.png") as ImageProvider,
                 fit: BoxFit.cover,

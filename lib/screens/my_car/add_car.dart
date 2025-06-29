@@ -154,12 +154,25 @@ class _AddCarScreenState extends State<AddCarScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[100],
+      backgroundColor: const Color.fromARGB(255, 231, 227, 227),
       appBar: AppBar(
-        backgroundColor: Colors.green,
-        title: Text("Add Car", style: TextStyle(color: Colors.white)),
+        toolbarHeight: 90,
+        backgroundColor: Color(0xFF629584),
+         centerTitle: true, // ✅ Tengahin judul
+        title: Text(
+          'Add Car',
+          style: TextStyle(
+            fontSize: 20,
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: Colors.white),
+          icon: Icon(
+            Icons.arrow_back_rounded,
+            color: Colors.white,
+            size: 28,
+          ), // ✅ Icon back lebih tebal
           onPressed: () => Navigator.pop(context),
         ),
       ),

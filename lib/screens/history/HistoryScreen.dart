@@ -43,9 +43,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
       final data = jsonDecode(response.body);
       if (data['success']) {
         setState(() {
-          _historyItems = (data['data'] as List)
-              .map((item) => HistoryItem.fromJson(item))
-              .toList();
+          _historyItems =
+              (data['data'] as List)
+                  .map((item) => HistoryItem.fromJson(item))
+                  .toList();
         });
       }
     }
@@ -102,15 +103,24 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
   }
 
+  // WIDGET YANG DIMODIFIKASI 1
   Widget _buildContentForTab() {
-    String selectedStatus = filters[_selectedIndex].toLowerCase();
-    final filteredItems = _historyItems.where((item) {
-      return item.status.toLowerCase() == selectedStatus;
+    String selectedFilter = filters[_selectedIndex].toLowerCase();
+    final filteredItems =
+    _historyItems.where((item) {
+      String itemStatus = item.status.toLowerCase();
+      // Jika filter yang dipilih adalah "Valid", tampilkan juga status "pending"
+      if (selectedFilter == "valid") {
+        return itemStatus == "valid" || itemStatus == "pending";
+      }
+      // Untuk filter lain, perilakunya tetap sama
+      return itemStatus == selectedFilter;
     }).toList();
 
     return RefreshIndicator(
       onRefresh: fetchHistory,
-      child: filteredItems.isEmpty
+      child:
+      filteredItems.isEmpty
           ? ListView(
         physics: AlwaysScrollableScrollPhysics(),
         children: [
@@ -146,14 +156,20 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
   }
 
+  // WIDGET YANG DIMODIFIKASI 2
   Widget _buildStatusBoxFromStatus(HistoryItem item) {
     final status = item.status.toLowerCase();
 
     switch (status) {
+    // Tambahkan case untuk "pending"
+      case "pending":
+        return _buildTextStatusBox("Waiting for payment", Colors.orange, Colors.white);
       case "valid":
         return _buildStatusBox(
           title: "Valid until",
-          date: DateFormat('d MMMM y').format(item.waktuKeluar ?? item.waktuMasuk),
+          date: DateFormat(
+            'd MMMM y',
+          ).format(item.waktuKeluar ?? item.waktuMasuk),
           time: DateFormat('HH.mm').format(item.waktuKeluar ?? item.waktuMasuk),
           color: Colors.blue,
         );
@@ -162,7 +178,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
       case "canceled":
         return _buildTextStatusBox("Canceled", Colors.red, Colors.white);
       default:
-        return _buildTextStatusBox(item.status, Colors.orange, Colors.white);
+        return _buildTextStatusBox(item.status, Colors.grey, Colors.white);
     }
   }
 
@@ -251,7 +267,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(location, style: TextStyle(fontWeight: FontWeight.bold)),
+                    Text(
+                      location,
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
                     Text(slot),
                     Text(duration),
                   ],
@@ -292,7 +311,8 @@ class HistoryItem {
       ticketId: json['tiket_id'].toString(),
       status: json['status'],
       waktuMasuk: DateTime.parse(json['waktu_masuk']),
-      waktuKeluar: json['waktu_keluar'] != null && json['waktu_keluar'] != ''
+      waktuKeluar:
+      json['waktu_keluar'] != null && json['waktu_keluar'] != ''
           ? DateTime.tryParse(json['waktu_keluar'])
           : null,
       biayaTotal: int.tryParse(json['biaya_total'].toString()) ?? 0,

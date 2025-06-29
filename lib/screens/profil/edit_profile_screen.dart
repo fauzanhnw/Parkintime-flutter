@@ -80,13 +80,27 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color.fromARGB(255, 248, 245, 245),
       appBar: AppBar(
-        backgroundColor: const Color.fromARGB(255, 31, 172, 85),
-        elevation: 0,
-        leading: const BackButton(color: Colors.white),
-        title: const Text("Edit Profile", style: TextStyle(color: Colors.white)),
-        centerTitle: true,
+        toolbarHeight:90,
+        backgroundColor: const Color(0xFF629584),
+       centerTitle: true, // ✅ Tengahin judul
+        title: Text(
+          'Edite Profile',
+          style: TextStyle(
+            fontSize: 20,
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        leading: IconButton(
+          icon: Icon(
+            Icons.arrow_back_rounded,
+            color: Colors.white,
+            size: 28,
+          ), // ✅ Icon back lebih tebal
+          onPressed: () => Navigator.pop(context),
+        ),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),

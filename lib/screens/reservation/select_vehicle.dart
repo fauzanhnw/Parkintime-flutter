@@ -3,14 +3,16 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:parkintime/screens/reservation/book_parking.dart';
-import 'package:parkintime/screens/my_car/add_car.dart';
+
 
 class SelectVehiclePage extends StatefulWidget {
   final String kodeslot;
+  final String id_lahan;
 
   const SelectVehiclePage({
     Key? key,
     required this.kodeslot,
+    required this.id_lahan,
   }) : super(key: key);
 
   @override
@@ -22,73 +24,127 @@ class _SelectVehiclePageState extends State<SelectVehiclePage> {
   List<Map<String, String>> vehicles = [];
   bool isLoading = true;
   String? idAkun;
+  int? tarifPerJam;
 
   @override
   void initState() {
     super.initState();
-    loadIdAkun();
+    loadInitialData();
+  }
+
+  Future<void> loadInitialData() async {
+    await loadIdAkun();
+    if (idAkun != null) {
+      await Future.wait([
+        fetchVehicles(),
+        fetchTarifLahan(),
+      ]);
+    }
+    setState(() {
+      isLoading = false;
+    });
   }
 
   Future<void> loadIdAkun() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    idAkun = prefs.getInt('id_akun')?.toString(); // Konversi ke String
+    idAkun = prefs.getInt('id_akun')?.toString();
+    print('Debug: idAkun yang diambil dari SharedPreferences: $idAkun');
+  }
 
-    print('idAkun yang diambil: $idAkun');
+  Future<void> fetchTarifLahan() async {
+    try {
+      print('Debug: Memulai fetchTarifLahan untuk id_lahan: ${widget.id_lahan}');
+      final response = await http.get(Uri.parse(
+        'https://app.parkintime.web.id/flutter/get_lahan.php',
+      ));
 
-    if (idAkun != null) {
-      fetchVehicles();
-    } else {
-      print('idAkun tidak tersedia');
-      setState(() {
-        isLoading = false;
-      });
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> jsonResponse = jsonDecode(response.body);
+
+        // --- Enhanced Debugging ---
+        print('Debug: Full response dari get_lahan.php: $jsonResponse');
+
+        if (jsonResponse['success'] == true) {
+          final List<dynamic> data = jsonResponse['data'];
+
+          // Mencari data lahan yang cocok
+          final lahanData = data.firstWhere(
+                (lahan) {
+              // Menambahkan print untuk setiap item yang diperiksa
+              print('Debug: Memeriksa lahan dengan id: ${lahan['id']} vs widget.id_lahan: ${widget.id_lahan}');
+              return lahan['id'].toString() == widget.id_lahan;
+            },
+            orElse: () => null,
+          );
+
+          if (lahanData != null) {
+            print('Debug: Lahan ditemukan: $lahanData');
+            String tarifString = lahanData['tarif_per_jam'].toString();
+            print('Debug: Nilai tarif_per_jam dari API (string): "$tarifString"');
+
+            // --- PERBAIKAN UTAMA ---
+            // Menggunakan double.tryParse untuk menangani format desimal "5000.00"
+            // kemudian diubah ke integer.
+            double? tarifDouble = double.tryParse(tarifString);
+
+            if (tarifDouble != null) {
+              setState(() {
+                tarifPerJam = tarifDouble.toInt();
+              });
+              print('Debug: Parsing tarif berhasil. tarifPerJam diatur ke: $tarifPerJam');
+            } else {
+              print('Debug: Gagal mem-parsing tarif. Nilai tidak valid: "$tarifString"');
+            }
+
+          } else {
+            print('Debug: Error! Lahan dengan id ${widget.id_lahan} tidak ditemukan dalam response API.');
+          }
+        } else {
+          print('Debug: API response success = false. Message: ${jsonResponse['message']}');
+        }
+      } else {
+        print('Debug: Error! Gagal memuat info lahan. Status code: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Debug: Exception terjadi di fetchTarifLahan: $e');
     }
   }
 
+
   Future<void> fetchVehicles() async {
+    // ... (kode fetchVehicles tidak berubah) ...
     try {
       print('Fetching vehicles...');
       final response = await http.get(Uri.parse(
         'https://app.parkintime.web.id/flutter/get_car.php?id_akun=$idAkun',
       ));
 
-      print('Response received: ${response.body}');
-
       if (response.statusCode == 200) {
         final Map<String, dynamic> json = jsonDecode(response.body);
-        print('Parsed JSON: $json');
-
         if (json['status'] == true) {
           final List<dynamic> data = json['data'];
-          print('Vehicle data: $data');
-
           setState(() {
             vehicles = data.map<Map<String, String>>((item) => {
-              'carid': item['id'] ?? '',
+              'carid': item['id']?.toString() ?? '',
               'brand': item['merek'] ?? 'No brand',
               'type': item['tipe'] ?? 'No type',
               'plate': item['no_kendaraan'] ?? 'No plate',
               'image': 'assets/car.png',
             }).toList();
-            isLoading = false;
           });
-          print('isLoading status: $isLoading');
-        } else {
-          throw Exception('No vehicles found');
         }
       } else {
         throw Exception('Failed to load vehicles');
       }
     } catch (e) {
-      print('Error: $e');
-      setState(() {
-        isLoading = false;
-      });
+      print('Error fetching vehicles: $e');
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final bool canContinue = selectedVehicleIndex != null && tarifPerJam != null;
+
     return Scaffold(
       backgroundColor: Color(0xFFF5F5F5),
       appBar: AppBar(
@@ -102,9 +158,9 @@ class _SelectVehiclePageState extends State<SelectVehiclePage> {
           children: [
             Expanded(
               child: isLoading
-                  ? Center(child: CircularProgressIndicator())  // Menunggu data
+                  ? Center(child: CircularProgressIndicator())
                   : vehicles.isEmpty
-                  ? Center(  // Tidak ada kendaraan
+                  ? Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -112,7 +168,8 @@ class _SelectVehiclePageState extends State<SelectVehiclePage> {
                     SizedBox(height: 12),
                     GestureDetector(
                       onTap: () {
-                        Navigator.pushNamed(context, '/AddCarScreen');
+                        // Ganti dengan navigasi yang benar
+                        // Navigator.pushNamed(context, '/AddCarScreen');
                       },
                       child: Text(
                         "Add Vehicle",
@@ -142,6 +199,9 @@ class _SelectVehiclePageState extends State<SelectVehiclePage> {
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(16),
+                        border: selectedVehicleIndex == index
+                            ? Border.all(color: Colors.green, width: 2)
+                            : null,
                       ),
                       child: Row(
                         children: [
@@ -192,29 +252,31 @@ class _SelectVehiclePageState extends State<SelectVehiclePage> {
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
               child: ElevatedButton(
-                onPressed: selectedVehicleIndex != null
+                onPressed: canContinue
                     ? () {
                   final selectedVehicle = vehicles[selectedVehicleIndex!];
                   Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (_) => BookParkingDetailsPage(
-                        pricePerHour: 5000,
                         kodeslot: widget.kodeslot,
-                        vehicleId: selectedVehicle['carid']!, vehiclePlate: '',
+                        id_lahan: widget.id_lahan,
+                        vehicleId: selectedVehicle['carid']!,
+                        vehiclePlate: selectedVehicle['plate']!,
+                        pricePerHour: tarifPerJam!,
                       ),
                     ),
                   );
                 }
                     : null,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green,
+                  backgroundColor: canContinue ? Colors.green : Colors.grey,
                   minimumSize: Size(double.infinity, 50),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                child: Text("Continue", style: TextStyle(fontSize: 16)),
+                child: Text("Continue", style: TextStyle(fontSize: 16, color: Colors.white)),
               ),
             ),
           ],
