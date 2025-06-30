@@ -33,9 +33,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return text
         .split(' ')
         .map((word) {
-          if (word.isEmpty) return '';
-          return word[0].toUpperCase() + word.substring(1);
-        })
+      if (word.isEmpty) return '';
+      return word[0].toUpperCase() + word.substring(1);
+    })
         .join(' ');
   }
 
@@ -54,7 +54,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(builder: (context) => LoginScreen()),
-      (Route<dynamic> route) => false,
+          (Route<dynamic> route) => false,
     );
   }
 
@@ -62,123 +62,128 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color.fromARGB(255, 233, 230, 230),
-      body: Column(
-        children: [
-          Container(
-            width: double.infinity,
-            color: const Color(0xFF629584),
-            padding: const EdgeInsets.only(
-              top: 40,
-              bottom: 20,
-              left: 16,
-              right: 16,
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                const CircleAvatar(
-                  radius: 35,
-                  backgroundColor: Colors.grey,
-                  child: Icon(Icons.person, size: 35, color: Colors.white),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        _truncateName(name, 5),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        email,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 14,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 20),
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Colors.black12,
-                    blurRadius: 8,
-                    offset: Offset(0, 4),
-                  ),
-                ],
+      // Gunakan SingleChildScrollView untuk membuat body bisa di-scroll
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            Container(
+              width: double.infinity,
+              color: const Color(0xFF629584),
+              padding: const EdgeInsets.only(
+                top: 40,
+                bottom: 20,
+                left: 16,
+                right: 16,
               ),
-              child: Column(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  _buildMenuItem(Icons.person_outline, "Edit Profile", () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => EditProfileScreen(),
-                      ),
-                    ).then((_) => _loadUserInfo());
-                  }),
-                  const Divider(height: 1),
-                  _buildMenuItem(Icons.lock_outline, "Change Password", () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => ChangePasswordScreen(),
-                      ),
-                    );
-                  }),
-                  const Divider(height: 1),
-                  _buildMenuItem(Icons.directions_car, "My Car", () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => ManageVehiclePage(),
-                      ),
-                    );
-                  }),
+                  const CircleAvatar(
+                    radius: 35,
+                    backgroundColor: Colors.grey,
+                    child: Icon(Icons.person, size: 35, color: Colors.white),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _truncateName(name, 5),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          email,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 14,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),
-          ),
-          const SizedBox(height: 20),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: SizedBox(
-              width: 330,
-              height: 50,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color.fromARGB(255, 255, 62, 28),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
+            const SizedBox(height: 20),
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Colors.black12,
+                      blurRadius: 8,
+                      offset: Offset(0, 4),
+                    ),
+                  ],
                 ),
-                onPressed: logout,
-                child: const Text(
-                  "Log Out",
-                  style: TextStyle(color: Colors.white, fontSize: 16),
+                child: Column(
+                  children: [
+                    _buildMenuItem(Icons.person_outline, "Edit Profile", () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => EditProfileScreen(),
+                        ),
+                      ).then((_) => _loadUserInfo());
+                    }),
+                    const Divider(height: 1),
+                    _buildMenuItem(Icons.lock_outline, "Change Password", () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ChangePasswordScreen(),
+                        ),
+                      );
+                    }),
+                    const Divider(height: 1),
+                    _buildMenuItem(Icons.directions_car, "My Car", () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ManageVehiclePage(),
+                        ),
+                      );
+                    }),
+                  ],
                 ),
               ),
             ),
-          ),
-        ],
+            const SizedBox(height: 20),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: SizedBox(
+                width: 330,
+                height: 50,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color.fromARGB(255, 255, 62, 28),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                  onPressed: logout,
+                  child: const Text(
+                    "Log Out",
+                    style: TextStyle(color: Colors.white, fontSize: 16),
+                  ),
+                ),
+              ),
+            ),
+            // Menambahkan sedikit ruang di bawah agar tombol tidak terlalu mepet
+            const SizedBox(height: 20),
+          ],
+        ),
       ),
     );
   }

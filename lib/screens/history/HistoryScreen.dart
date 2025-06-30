@@ -3,8 +3,11 @@ import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
+import 'package:parkintime/screens/ticket_page.dart';
 
 class HistoryScreen extends StatefulWidget {
+  const HistoryScreen({Key? key}) : super(key: key);
+
   @override
   _HistoryScreenState createState() => _HistoryScreenState();
 }
@@ -14,6 +17,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
   int? _idAkun;
   final List<String> filters = ["Valid", "Completed", "Canceled"];
   List<HistoryItem> _historyItems = [];
+  bool _isLoading = true;
 
   @override
   void initState() {
@@ -28,34 +32,49 @@ class _HistoryScreenState extends State<HistoryScreen> {
     });
     if (_idAkun != null) {
       await fetchHistory();
+    } else {
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
 
   Future<void> fetchHistory() async {
     if (_idAkun == null) return;
+    setState(() {
+      _isLoading = true;
+    });
 
-    final response = await http.post(
-      Uri.parse("https://app.parkintime.web.id/flutter/riwayat.php"),
-      body: {"id_akun": _idAkun.toString()},
-    );
+    try {
+      final response = await http.post(
+        Uri.parse("https://app.parkintime.web.id/flutter/riwayat.php"),
+        body: {"id_akun": _idAkun.toString()},
+      );
 
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      if (data['success']) {
-        setState(() {
-          _historyItems =
-              (data['data'] as List)
-                  .map((item) => HistoryItem.fromJson(item))
-                  .toList();
-        });
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['success']) {
+          setState(() {
+            _historyItems = (data['data'] as List)
+                .map((item) => HistoryItem.fromJson(item))
+                .toList();
+          });
+        }
       }
+    } catch (e) {
+      // Handle error, maybe show a snackbar
+      print(e);
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0xFFF5F5F5),
+      backgroundColor: const Color(0xFFF5F5F5),
       body: Column(
         children: [
           Container(
@@ -78,7 +97,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     });
                   },
                   child: Container(
-                    padding: EdgeInsets.symmetric(vertical: 6, horizontal: 20),
+                    padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 20),
                     decoration: BoxDecoration(
                       color: isSelected ? Colors.green : Colors.white,
                       borderRadius: BorderRadius.circular(8),
@@ -96,44 +115,54 @@ class _HistoryScreenState extends State<HistoryScreen> {
               }),
             ),
           ),
-          Divider(height: 1, thickness: 1),
+          const Divider(height: 1, thickness: 1),
           Expanded(child: _buildContentForTab()),
         ],
       ),
     );
   }
 
-  // WIDGET YANG DIMODIFIKASI 1
   Widget _buildContentForTab() {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
     String selectedFilter = filters[_selectedIndex].toLowerCase();
-    final filteredItems =
-    _historyItems.where((item) {
+    final filteredItems = _historyItems.where((item) {
       String itemStatus = item.status.toLowerCase();
-      // Jika filter yang dipilih adalah "Valid", tampilkan juga status "pending"
       if (selectedFilter == "valid") {
         return itemStatus == "valid" || itemStatus == "pending";
       }
-      // Untuk filter lain, perilakunya tetap sama
       return itemStatus == selectedFilter;
     }).toList();
 
     return RefreshIndicator(
       onRefresh: fetchHistory,
-      child:
-      filteredItems.isEmpty
+      child: filteredItems.isEmpty
           ? ListView(
-        physics: AlwaysScrollableScrollPhysics(),
-        children: [
+        physics: const AlwaysScrollableScrollPhysics(),
+        children: const [
           SizedBox(height: 200),
           Center(child: Text("No history found.")),
         ],
       )
           : ListView.builder(
-        padding: EdgeInsets.all(20),
+        padding: const EdgeInsets.all(20),
         itemCount: filteredItems.length,
         itemBuilder: (context, index) {
           final item = filteredItems[index];
-          return _buildHistoryCardFromModel(item);
+          // 2. MEMBUNGKUS KARTU DENGAN GESTUREDETECTOR DAN NAVIGASI
+          return GestureDetector(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => TicketPage(ticketId: item.ticketId),
+                ),
+              );
+            },
+            child: _buildHistoryCardFromModel(item),
+          );
         },
       ),
     );
@@ -147,29 +176,25 @@ class _HistoryScreenState extends State<HistoryScreen> {
         "${DateFormat('d MMMM y').format(masuk)} - ${DateFormat('HH.mm').format(masuk)}";
 
     return _buildHistoryCard(
-      ticket: item.ticketId,
+      ticket: '#${item.ticketId}', // Menampilkan ID tiket
       date: dateText,
-      location: "${item.namaLokasi}",
+      location: item.namaLokasi,
       slot: item.kodeSlot,
       duration: "${duration.inHours} Hours",
       statusWidget: _buildStatusBoxFromStatus(item),
     );
   }
 
-  // WIDGET YANG DIMODIFIKASI 2
   Widget _buildStatusBoxFromStatus(HistoryItem item) {
     final status = item.status.toLowerCase();
 
     switch (status) {
-    // Tambahkan case untuk "pending"
       case "pending":
         return _buildTextStatusBox("Waiting for payment", Colors.orange, Colors.white);
       case "valid":
         return _buildStatusBox(
           title: "Valid until",
-          date: DateFormat(
-            'd MMMM y',
-          ).format(item.waktuKeluar ?? item.waktuMasuk),
+          date: DateFormat('d MMMM y').format(item.waktuKeluar ?? item.waktuMasuk),
           time: DateFormat('HH.mm').format(item.waktuKeluar ?? item.waktuMasuk),
           color: Colors.blue,
         );
@@ -189,20 +214,20 @@ class _HistoryScreenState extends State<HistoryScreen> {
     required Color color,
   }) {
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
         color: color,
         borderRadius: BorderRadius.circular(10),
       ),
       child: Column(
         children: [
-          Text(title, style: TextStyle(color: Colors.white, fontSize: 12)),
-          SizedBox(height: 2),
-          Text(date, style: TextStyle(color: Colors.white, fontSize: 12)),
-          SizedBox(height: 4),
+          Text(title, style: const TextStyle(color: Colors.white, fontSize: 12)),
+          const SizedBox(height: 2),
+          Text(date, style: const TextStyle(color: Colors.white, fontSize: 12)),
+          const SizedBox(height: 4),
           Text(
             time,
-            style: TextStyle(
+            style: const TextStyle(
               color: Colors.white,
               fontSize: 16,
               fontWeight: FontWeight.bold,
@@ -215,7 +240,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
   Widget _buildTextStatusBox(String text, Color bgColor, Color textColor) {
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
         color: bgColor,
         borderRadius: BorderRadius.circular(10),
@@ -237,8 +262,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
     required Widget statusWidget,
   }) {
     return Container(
-      margin: EdgeInsets.only(bottom: 16),
-      padding: EdgeInsets.all(16),
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
@@ -246,7 +271,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
           BoxShadow(
             color: Colors.black.withOpacity(0.06),
             blurRadius: 6,
-            offset: Offset(0, 2),
+            offset: const Offset(0, 2),
           ),
         ],
       ),
@@ -255,11 +280,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(ticket, style: TextStyle(fontWeight: FontWeight.bold)),
-              Text(date, style: TextStyle(fontSize: 12)),
+              Text(ticket, style: const TextStyle(fontWeight: FontWeight.bold)),
+              Text(date, style: const TextStyle(fontSize: 12)),
             ],
           ),
-          SizedBox(height: 10),
+          const SizedBox(height: 10),
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -269,7 +294,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   children: [
                     Text(
                       location,
-                      style: TextStyle(fontWeight: FontWeight.bold),
+                      style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                     Text(slot),
                     Text(duration),
@@ -286,7 +311,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
 }
 
 class HistoryItem {
-  final String ticketId;
+  final int ticketId; // <-- 3. DIUBAH MENJADI INT
   final String status;
   final DateTime waktuMasuk;
   final DateTime? waktuKeluar;
@@ -308,11 +333,11 @@ class HistoryItem {
 
   factory HistoryItem.fromJson(Map<String, dynamic> json) {
     return HistoryItem(
-      ticketId: json['tiket_id'].toString(),
+      // 4. DIUBAH AGAR MEM-PARSE STRING KE INT
+      ticketId: int.tryParse(json['tiket_id'].toString()) ?? 0,
       status: json['status'],
       waktuMasuk: DateTime.parse(json['waktu_masuk']),
-      waktuKeluar:
-      json['waktu_keluar'] != null && json['waktu_keluar'] != ''
+      waktuKeluar: json['waktu_keluar'] != null && json['waktu_keluar'] != ''
           ? DateTime.tryParse(json['waktu_keluar'])
           : null,
       biayaTotal: int.tryParse(json['biaya_total'].toString()) ?? 0,
