@@ -239,7 +239,7 @@ class _ManageVehiclePageState extends State<ManageVehiclePage> {
                 }
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF2ECC40),
+                backgroundColor: const Color(0xFF629584),
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
