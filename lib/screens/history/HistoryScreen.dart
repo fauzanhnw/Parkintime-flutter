@@ -151,7 +151,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
         itemCount: filteredItems.length,
         itemBuilder: (context, index) {
           final item = filteredItems[index];
-          // 2. MEMBUNGKUS KARTU DENGAN GESTUREDETECTOR DAN NAVIGASI
           return GestureDetector(
             onTap: () {
               Navigator.push(
@@ -176,7 +175,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
         "${DateFormat('d MMMM y').format(masuk)} - ${DateFormat('HH.mm').format(masuk)}";
 
     return _buildHistoryCard(
-      ticket: '#${item.ticketId}', // Menampilkan ID tiket
+      // <<< DIUBAH: Mengirim orderId ke widget kartu
+      orderId: item.orderId ?? 'NO ID',
       date: dateText,
       location: item.namaLokasi,
       slot: item.kodeSlot,
@@ -253,8 +253,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
   }
 
+  // <<< DIUBAH: Mengganti parameter 'ticket' menjadi 'orderId'
   Widget _buildHistoryCard({
-    required String ticket,
+    required String orderId,
     required String date,
     required String location,
     required String slot,
@@ -280,7 +281,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(ticket, style: const TextStyle(fontWeight: FontWeight.bold)),
+              // <<< DIUBAH: Menampilkan orderId
+              Text(orderId, style: const TextStyle(fontWeight: FontWeight.bold)),
               Text(date, style: const TextStyle(fontSize: 12)),
             ],
           ),
@@ -311,7 +313,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
 }
 
 class HistoryItem {
-  final int ticketId; // <-- 3. DIUBAH MENJADI INT
+  final int ticketId;
+  // <<< DIUBAH: Menambahkan properti orderId
+  final String? orderId;
   final String status;
   final DateTime waktuMasuk;
   final DateTime? waktuKeluar;
@@ -322,6 +326,8 @@ class HistoryItem {
 
   HistoryItem({
     required this.ticketId,
+    // <<< DIUBAH: Menambahkan orderId ke constructor
+    this.orderId,
     required this.status,
     required this.waktuMasuk,
     this.waktuKeluar,
@@ -333,8 +339,9 @@ class HistoryItem {
 
   factory HistoryItem.fromJson(Map<String, dynamic> json) {
     return HistoryItem(
-      // 4. DIUBAH AGAR MEM-PARSE STRING KE INT
       ticketId: int.tryParse(json['tiket_id'].toString()) ?? 0,
+      // <<< DIUBAH: Mengambil data 'order_id' dari JSON
+      orderId: json['order_id'],
       status: json['status'],
       waktuMasuk: DateTime.parse(json['waktu_masuk']),
       waktuKeluar: json['waktu_keluar'] != null && json['waktu_keluar'] != ''

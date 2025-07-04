@@ -44,8 +44,9 @@ class _PaymentWebViewPageState extends State<PaymentWebViewPage> {
             setState(() {
               _isLoading = false;
             });
-            if (url.contains('finish') && !_isPaymentFinished) {
-              _isPaymentFinished = true;
+            // Cek jika URL mengandung callback 'finish'
+            if (url.contains('https://app.parkintime.web.id/payment/finish.php') && !_isPaymentFinished) {
+              _isPaymentFinished = true; // Tandai agar tidak dieksekusi berulang kali
               _showSuccessAndPop();
             }
           },
@@ -70,6 +71,9 @@ class _PaymentWebViewPageState extends State<PaymentWebViewPage> {
   }
 
   void _showSuccessAndPop() {
+    // Pastikan widget masih ada di tree sebelum menampilkan dialog
+    if (!mounted) return;
+
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -81,7 +85,8 @@ class _PaymentWebViewPageState extends State<PaymentWebViewPage> {
             TextButton(
               child: Text('OK'),
               onPressed: () {
-                Navigator.of(dialogContext).pop();
+                Navigator.of(dialogContext).pop(); // Tutup dialog
+                // Kembali ke halaman paling awal (root) dari stack navigasi
                 Navigator.of(context).popUntil((route) => route.isFirst);
               },
             ),
@@ -93,19 +98,28 @@ class _PaymentWebViewPageState extends State<PaymentWebViewPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Payment'),
-        backgroundColor: Colors.green,
-      ),
-      body: Stack(
-        children: [
-          WebViewWidget(controller: _controller),
-          if (_isLoading)
-            const Center(
-              child: CircularProgressIndicator(color: Colors.green),
-            ),
-        ],
+    // PERUBAHAN: Widget WillPopScope untuk menangani tombol kembali fisik di Android
+    return WillPopScope(
+      onWillPop: () async {
+        if (await _controller.canGoBack()) {
+          _controller.goBack();
+          return false; // Mencegah aplikasi keluar jika WebView bisa kembali
+        }
+        return true; // Izinkan aplikasi keluar jika WebView tidak bisa kembali
+      },
+      child: Scaffold(
+        // PERUBAHAN: AppBar telah dihapus dari sini
+        body: SafeArea( // Menggunakan SafeArea agar konten tidak tertutup notch/status bar
+          child: Stack(
+            children: [
+              WebViewWidget(controller: _controller),
+              if (_isLoading)
+                const Center(
+                  child: CircularProgressIndicator(color: Colors.green),
+                ),
+            ],
+          ),
+        ),
       ),
     );
   }

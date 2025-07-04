@@ -59,6 +59,7 @@ class _ReviewBookingPageState extends State<ReviewBookingPage> {
         _fetchVehicleDetails(),
       ]);
     } catch (e) {
+      // Menampilkan error di konsol untuk debugging
       print("Error fetching page details: $e");
     } finally {
       if (mounted) {
@@ -118,18 +119,47 @@ class _ReviewBookingPageState extends State<ReviewBookingPage> {
       _isCreatingOrder = true;
     });
 
-    http.Response? response; // Variabel untuk menyimpan response
+    http.Response? response;
 
     try {
-      final url = Uri.parse('https://app.parkintime.web.id/flutter/create_booking.php');
+      // --- PERBAIKAN DIMULAI DI SINI ---
 
+      // 1. Menyiapkan string waktu masuk dari widget (misal: "2025-07-04 10:00 PM")
+      final String waktuMasukInput = "${widget.date} ${widget.hours.split(' - ')[0]}";
+
+      // 2. Membuat formatter untuk format input (12 jam dengan AM/PM)
+      final DateFormat inputFormatter = DateFormat('yyyy-MM-dd hh:mm a');
+
+      // 3. Membuat formatter untuk format output (24 jam, sesuai kebutuhan API)
+      final DateFormat outputFormatter = DateFormat('yyyy-MM-dd HH:mm:ss');
+
+      // 4. Mengurai string input menjadi objek DateTime
+      final DateTime waktuMasuk = inputFormatter.parse(waktuMasukInput);
+
+      // 5. Memformat objek DateTime ke string format 24 jam untuk API
+      final String waktuMasukForApi = outputFormatter.format(waktuMasuk);
+
+      // 6. Mengurai durasi dari string (misal: "2 Jam" -> 2)
+      final int durasiJam = int.tryParse(widget.duration.split(' ')[0]) ?? 0;
+
+      // 7. Menghitung waktu keluar dengan menambahkan durasi
+      final DateTime waktuKeluar = waktuMasuk.add(Duration(hours: durasiJam));
+
+      // 8. Memformat waktu keluar ke string format 24 jam untuk API
+      final String waktuKeluarForApi = outputFormatter.format(waktuKeluar);
+
+      // 9. Membuat request body yang sesuai dengan API
       final requestBody = {
         'id_akun': _idAkun,
         'id_slot': widget.kodeslot,
-        'durasi': widget.duration.split(' ')[0],
         'biaya_total': widget.total_price,
-        'waktu_masuk': "${widget.date} ${widget.hours.split(' - ')[0]}:00",
+        'waktu_masuk': waktuMasukForApi, // Menggunakan string format 24 jam
+        'waktu_keluar': waktuKeluarForApi, // Menggunakan string format 24 jam
       };
+
+      // --- PERBAIKAN SELESAI DI SINI ---
+
+      final url = Uri.parse('https://app.parkintime.web.id/flutter/create_booking.php');
 
       response = await http.post(
         url,
@@ -137,7 +167,10 @@ class _ReviewBookingPageState extends State<ReviewBookingPage> {
         body: jsonEncode(requestBody),
       );
 
-      if (response.statusCode == 200) {
+      // Cek jika widget masih ada di tree sebelum memproses response
+      if (!mounted) return;
+
+      if (response.statusCode == 201) { // API yang baik mengembalikan 201 Created
         final responseData = jsonDecode(response.body);
         if (responseData['success'] == true) {
           final String redirectUrl = responseData['redirect_url'];
@@ -154,28 +187,30 @@ class _ReviewBookingPageState extends State<ReviewBookingPage> {
           throw Exception(responseData['message'] ?? 'Failed to create booking.');
         }
       } else {
-        throw Exception('Server Error. Status Code: ${response.statusCode}');
+        final responseData = jsonDecode(response.body);
+        final errorMessage = responseData['message'] ?? 'Server Error. Status Code: ${response.statusCode}';
+        throw Exception(errorMessage);
       }
 
     } catch (e) {
-      // --- PERUBAHAN UNTUK DEBUGGING ---
       String errorMessage = e.toString();
-      // Jika errornya adalah FormatException, tampilkan seluruh body response dari server
       if (e is FormatException && response != null) {
         errorMessage = "Failed to parse JSON. Server Response:\n${response.body}";
       }
 
-      print("--- ERROR LOG ---");
-      print(errorMessage);
-      print("--- END ERROR LOG ---");
+      print("--- ERROR LOG ---\n$errorMessage\n--- END ERROR LOG ---");
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(errorMessage), backgroundColor: Colors.red),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(errorMessage.replaceFirst("Exception: ", "")), backgroundColor: Colors.red),
+        );
+      }
     } finally {
-      setState(() {
-        _isCreatingOrder = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isCreatingOrder = false;
+        });
+      }
     }
   }
 
