@@ -43,7 +43,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         child: BottomNavigationBar(
           backgroundColor: Colors.white,
-          selectedItemColor: Color(0xFF2ECC40), // hijau branding
+          selectedItemColor: Color(0xFF629584), // hijau branding
           unselectedItemColor: Colors.black54,
           showSelectedLabels: true,
           showUnselectedLabels: true,

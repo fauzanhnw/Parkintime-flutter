@@ -60,7 +60,9 @@ class _BookParkingDetailsPageState extends State<BookParkingDetailsPage> {
     if (_selectedDay != null && isSameDay(_selectedDay, now)) {
       final nowTime = TimeOfDay.fromDateTime(now);
       // If the currently set start time is in the past, adjust it to the next hour.
-      if (_startTime.hour < nowTime.hour || (_startTime.hour == nowTime.hour && _startTime.minute <= nowTime.minute)) {
+      if (_startTime.hour < nowTime.hour ||
+          (_startTime.hour == nowTime.hour &&
+              _startTime.minute <= nowTime.minute)) {
         setState(() {
           _startTime = TimeOfDay(hour: now.hour + 1, minute: 0);
           _recalculateEndTime();
@@ -87,9 +89,25 @@ class _BookParkingDetailsPageState extends State<BookParkingDetailsPage> {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
       appBar: AppBar(
-        title: const Text('Book Parking Details'),
-        backgroundColor: Colors.green,
-        leading: const BackButton(color: Colors.white),
+        toolbarHeight: 80,
+        backgroundColor: Color(0xFF629584),
+        centerTitle: true, // ✅ Tengahin judul
+        title: Text(
+          'Book Parking',
+          style: TextStyle(
+            fontSize: 20,
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        leading: IconButton(
+          icon: Icon(
+            Icons.arrow_back_rounded,
+            color: Colors.white,
+            size: 28,
+          ), // ✅ Icon back lebih tebal
+          onPressed: () => Navigator.pop(context),
+        ),
       ),
       body: SingleChildScrollView(
         child: Column(
@@ -115,7 +133,9 @@ class _BookParkingDetailsPageState extends State<BookParkingDetailsPage> {
                 child: Padding(
                   padding: const EdgeInsets.all(8.0),
                   child: TableCalendar(
-                    firstDay: DateTime.now().subtract(Duration(days: 1)), // Allow seeing today
+                    firstDay: DateTime.now().subtract(
+                      Duration(days: 1),
+                    ), // Allow seeing today
                     lastDay: DateTime.utc(2030),
                     focusedDay: _focusedDay,
                     selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
@@ -129,7 +149,9 @@ class _BookParkingDetailsPageState extends State<BookParkingDetailsPage> {
                     },
                     // Disable selection of past dates
                     enabledDayPredicate: (day) {
-                      return !day.isBefore(DateTime.now().subtract(Duration(days: 1)));
+                      return !day.isBefore(
+                        DateTime.now().subtract(Duration(days: 1)),
+                      );
                     },
                     calendarStyle: CalendarStyle(
                       todayDecoration: BoxDecoration(
@@ -189,7 +211,11 @@ class _BookParkingDetailsPageState extends State<BookParkingDetailsPage> {
                   const SizedBox(width: 8),
                   const Icon(Icons.arrow_forward, color: Colors.grey),
                   const SizedBox(width: 8),
-                  _buildTimeCard('End Hour', _endTime, null), // End time cannot be picked
+                  _buildTimeCard(
+                    'End Hour',
+                    _endTime,
+                    null,
+                  ), // End time cannot be picked
                 ],
               ),
             ),
@@ -231,21 +257,24 @@ class _BookParkingDetailsPageState extends State<BookParkingDetailsPage> {
               height: 50,
               child: ElevatedButton(
                 onPressed: () {
-                  final String formattedDate = dateFormatter.format(_selectedDay!);
+                  final String formattedDate = dateFormatter.format(
+                    _selectedDay!,
+                  );
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => ReviewBookingPage(
-                        kodeslot: widget.kodeslot,
-                        id_lahan: widget.id_lahan,
-                        carid: widget.vehicleId,
-                        date: formattedDate,
-                        duration: durationText,
-                        hours: hours,
-                        total_price: totalPrice,
-                        vehiclePlate: widget.vehiclePlate,
-                        pricePerHour: widget.pricePerHour,
-                      ),
+                      builder:
+                          (_) => ReviewBookingPage(
+                            kodeslot: widget.kodeslot,
+                            id_lahan: widget.id_lahan,
+                            carid: widget.vehicleId,
+                            date: formattedDate,
+                            duration: durationText,
+                            hours: hours,
+                            total_price: totalPrice,
+                            vehiclePlate: widget.vehiclePlate,
+                            pricePerHour: widget.pricePerHour,
+                          ),
                     ),
                   );
                 },
@@ -255,7 +284,10 @@ class _BookParkingDetailsPageState extends State<BookParkingDetailsPage> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                child: const Text('Continue', style: TextStyle(fontSize: 16, color: Colors.white)),
+                child: const Text(
+                  'Continue',
+                  style: TextStyle(fontSize: 16, color: Colors.white),
+                ),
               ),
             ),
           ],
@@ -269,7 +301,12 @@ class _BookParkingDetailsPageState extends State<BookParkingDetailsPage> {
     final now = DateTime.now();
     // Combine selected day and picked time into a full DateTime
     final selectedDateTime = DateTime(
-        _selectedDay!.year, _selectedDay!.month, _selectedDay!.day, picked.hour, picked.minute);
+      _selectedDay!.year,
+      _selectedDay!.month,
+      _selectedDay!.day,
+      picked.hour,
+      picked.minute,
+    );
 
     // Allow a small buffer of a few seconds for comparison
     if (selectedDateTime.isBefore(now.subtract(const Duration(minutes: 1)))) {
@@ -289,23 +326,24 @@ class _BookParkingDetailsPageState extends State<BookParkingDetailsPage> {
   }
 
   Widget _buildTimeCard(
-      String label,
-      TimeOfDay time,
-      ValueChanged<TimeOfDay>? onPicked,
-      ) {
+    String label,
+    TimeOfDay time,
+    ValueChanged<TimeOfDay>? onPicked,
+  ) {
     return Expanded(
       child: InkWell(
-        onTap: (onPicked == null)
-            ? null
-            : () async {
-          final picked = await showTimePicker(
-            context: context,
-            initialTime: time,
-          );
-          if (picked != null) {
-            onPicked(picked);
-          }
-        },
+        onTap:
+            (onPicked == null)
+                ? null
+                : () async {
+                  final picked = await showTimePicker(
+                    context: context,
+                    initialTime: time,
+                  );
+                  if (picked != null) {
+                    onPicked(picked);
+                  }
+                },
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
           decoration: BoxDecoration(

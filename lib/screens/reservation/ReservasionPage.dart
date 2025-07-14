@@ -251,28 +251,32 @@ class _ReservasionpageState extends State<Reservasionpage> {
                                         );
                                       },
                                       style: ElevatedButton.styleFrom(
-                                        backgroundColor: Color(0xFF2ECC40),
+                                        backgroundColor: Color.fromARGB(255, 98, 149, 118),
                                         shape: RoundedRectangleBorder(
                                           borderRadius: BorderRadius.circular(
                                             6,
                                           ),
                                         ),
                                       ),
-                                      child: Text("Select"),
+                                      child: Text("Select",style: const TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+              color: Colors.white,
+            ),),
                                     ),
                                   ),
                                   SizedBox(width: 12),
                                   IconButton(
                                     icon: Icon(
                                       Icons.navigation,
-                                      color: Colors.green,
+                                      color: Color(0xFF629584),
                                     ),
                                     onPressed: () {},
                                   ),
                                   IconButton(
                                     icon: Icon(
                                       Icons.share,
-                                      color: Colors.green,
+                                      color: Color(0xFF629584),
                                     ),
                                     onPressed: () {
                                       final message =

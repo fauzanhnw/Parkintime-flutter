@@ -16,10 +16,10 @@ class VehicleCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: 320,
+    // Menggunakan IntrinsicHeight agar VerticalDivider bisa menyesuaikan tinggi
+    return IntrinsicHeight(
       child: Container(
-        margin: const EdgeInsets.only(right: 12),
+        width: 320, // Lebar kartu bisa disesuaikan jika perlu
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: Colors.white,
@@ -36,22 +36,25 @@ class VehicleCard extends StatelessWidget {
           children: [
             // Gambar mobil
             Image.asset(
-              'assets/car.png', // Ganti dengan path gambar Anda
+              'assets/car.png',
               width: 50,
               height: 50,
               fit: BoxFit.contain,
             ),
-
             const SizedBox(width: 12),
 
-            // Garis vertikal pemisah
-            Container(width: 1, height: 50, color: Colors.grey[300]),
-
+            // Garis vertikal pemisah (lebih baik menggunakan VerticalDivider)
+            const VerticalDivider(
+              color: Color(0xFFE0E0E0), // Warna abu-abu yang lebih lembut
+              thickness: 1,
+            ),
             const SizedBox(width: 12),
 
             // Informasi kendaraan
             Expanded(
               child: Column(
+                // --- PERBAIKAN UTAMA: Teks dibuat rata tengah vertikal ---
+                mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
@@ -62,13 +65,14 @@ class VehicleCard extends StatelessWidget {
                       color: Colors.black,
                     ),
                     overflow: TextOverflow.ellipsis,
+                    maxLines: 1, // Pastikan tidak lebih dari 1 baris
                   ),
                   const SizedBox(height: 4),
                   Text(
                     plate.toUpperCase(),
                     style: const TextStyle(
                       fontSize: 14,
-                      color: Colors.green,
+                      color: Color(0xFF629584), // Warna hijau branding
                       fontWeight: FontWeight.w600,
                     ),
                   ),

@@ -5,7 +5,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 
 // Model untuk menampung data tiket dari API
 class Ticket {
-  final String orderId; // <-- DITAMBAHKAN
+  final String orderId;
   final String status;
   final String nomorPlat;
   final String jenisKendaraan;
@@ -20,7 +20,7 @@ class Ticket {
   final String statusPembayaran;
 
   Ticket({
-    required this.orderId, // <-- DITAMBAHKAN
+    required this.orderId,
     required this.status,
     required this.nomorPlat,
     required this.jenisKendaraan,
@@ -38,8 +38,9 @@ class Ticket {
   // Factory constructor untuk membuat instance Ticket dari JSON
   factory Ticket.fromJson(Map<String, dynamic> json) {
     return Ticket(
-      orderId: json['order_id'] ?? '', // <-- DITAMBAHKAN
-      status: json['status'] ?? 'Unknown',
+      orderId: json['order_id'] ?? '',
+      // Normalisasi status ke huruf kecil untuk konsistensi
+      status: (json['status'] as String? ?? 'Unknown').toLowerCase(),
       nomorPlat: json['nomor_plat'],
       jenisKendaraan: json['jenis_kendaraan'],
       parkingArea: json['parking_area'],
@@ -76,28 +77,58 @@ class _TicketPageState extends State<TicketPage> {
   // Fungsi untuk mengambil data dari API
   Future<Ticket> fetchTicket() async {
     // GANTI DENGAN URL API ANDA
-    final apiUrl = 'https://app.parkintime.web.id/flutter/tiket.php?id=${widget.ticketId}';
+    final apiUrl =
+        'https://app.parkintime.web.id/flutter/tiket.php?id=${widget.ticketId}';
 
     try {
       final response = await http.get(Uri.parse(apiUrl));
 
       if (response.statusCode == 200) {
-        // Jika server merespons dengan OK, parse JSON.
         final jsonResponse = json.decode(response.body);
         if (jsonResponse['status'] == 'success') {
           return Ticket.fromJson(jsonResponse['data']);
         } else {
-          // Jika status dari API adalah error
           throw Exception('Gagal memuat tiket: ${jsonResponse['message']}');
         }
       } else {
-        // Jika server tidak merespons dengan OK.
-        throw Exception('Gagal terhubung ke server. Status code: ${response.statusCode}');
+        throw Exception(
+          'Gagal terhubung ke server. Status code: ${response.statusCode}',
+        );
       }
     } catch (e) {
-      // Menangani error koneksi atau lainnya
-      throw Exception('Gagal memuat data. Periksa koneksi internet Anda. Error: $e');
+      throw Exception(
+        'Gagal memuat data. Periksa koneksi internet Anda. Error: $e',
+      );
     }
+  }
+
+  // --- FUNGSI UNTUK AKSI TOMBOL ---
+
+  void _handlePayment(String orderId) {
+    // TODO: Implementasikan logika navigasi ke Midtrans di sini
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Membuka pembayaran untuk: $orderId')),
+    );
+  }
+
+  void _cancelOrder(String orderId) {
+    // TODO: Implementasikan logika untuk membatalkan pesanan (panggil API, dll)
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Membatalkan pesanan: $orderId')),
+    );
+    // Mungkin refresh halaman setelah berhasil
+    // setState(() {
+    //   futureTicket = fetchTicket();
+    // });
+  }
+
+  void _deleteTicket(String orderId) {
+    // TODO: Implementasikan logika untuk menghapus tiket
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Menghapus tiket: $orderId')),
+    );
+    // Mungkin kembali ke halaman sebelumnya setelah berhasil
+    // Navigator.pop(context);
   }
 
   @override
@@ -105,22 +136,34 @@ class _TicketPageState extends State<TicketPage> {
     return Scaffold(
       backgroundColor: Colors.green,
       appBar: AppBar(
-        backgroundColor: Colors.green,
-        elevation: 0,
+        toolbarHeight: 50,
+        backgroundColor: Color(0xFF629584),
+        centerTitle: true,
+        title: Text(
+          'View Ticket',
+          style: TextStyle(
+            fontSize: 15,
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          icon: Icon(
+            Icons.arrow_back_rounded,
+            color: Colors.white,
+            size: 20,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text('E-Ticket Parkir', style: TextStyle(color: Colors.white)),
       ),
       body: FutureBuilder<Ticket>(
         future: futureTicket,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            // Tampilkan loading indicator saat data sedang diambil
-            return const Center(child: CircularProgressIndicator(color: Colors.white));
+            return const Center(
+              child: CircularProgressIndicator(color: Colors.white),
+            );
           } else if (snapshot.hasError) {
-            // Tampilkan pesan error jika terjadi masalah
             return Center(
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
@@ -132,18 +175,20 @@ class _TicketPageState extends State<TicketPage> {
               ),
             );
           } else if (snapshot.hasData) {
-            // Jika data berhasil didapat, tampilkan UI tiket
             final ticket = snapshot.data!;
             return buildTicketBody(context, ticket);
           }
-          // State default
-          return const Center(child: Text('Tidak ada data tiket.', style: TextStyle(color: Colors.white)));
+          return const Center(
+            child: Text(
+              'Tidak ada data tiket.',
+              style: TextStyle(color: Colors.white),
+            ),
+          );
         },
       ),
     );
   }
 
-  // Widget untuk membangun tampilan utama setelah data didapat
   Widget buildTicketBody(BuildContext context, Ticket ticket) {
     return Container(
       width: double.infinity,
@@ -172,37 +217,38 @@ class _TicketPageState extends State<TicketPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Status Tiket & Order ID
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      ticket.orderId, // <-- DIUBAH
+                      ticket.orderId,
                       style: const TextStyle(
-                          color: Colors.grey, fontWeight: FontWeight.bold),
+                        color: Colors.grey,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     buildTicketStatusBadge(ticket.status),
                   ],
                 ),
                 const SizedBox(height: 10),
-                // Nomor Plat & Jenis Kendaraan
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     buildHeaderInfo('Nomor Plat:', ticket.nomorPlat),
-                    buildHeaderInfo('Jenis Kendaraan', ticket.jenisKendaraan,
-                        isRight: true),
+                    buildHeaderInfo(
+                      'Jenis Kendaraan',
+                      ticket.jenisKendaraan,
+                      isRight: true,
+                    ),
                   ],
                 ),
                 const Divider(height: 30),
-                // Informasi Parkir
                 buildInfoRow('Parking Area:', ticket.parkingArea),
                 buildInfoRow('Address:', ticket.address),
                 buildInfoRow('Vehicle:', ticket.vehicle),
                 buildInfoRow('Parking Spot:', ticket.parkingSpot),
                 buildInfoRow('Waktu Masuk:', ticket.waktuMasuk),
                 const SizedBox(height: 20),
-                // QR Code
                 Center(
                   child: QrImageView(
                     data: ticket.qrData,
@@ -213,55 +259,110 @@ class _TicketPageState extends State<TicketPage> {
                 ),
                 const SizedBox(height: 20),
                 const Divider(),
-                // Tarif
                 buildInfoRow('Tarif per jam:', ticket.tarifPerJam),
                 buildInfoRow('Total:', ticket.total),
                 const SizedBox(height: 20),
-                // Status Pembayaran
                 buildPaymentStatus(ticket.statusPembayaran),
                 const SizedBox(height: 20),
               ],
             ),
           ),
           const SizedBox(height: 20),
-          // Tombol Simpan Ticket
-          SizedBox(
-            width: double.infinity,
-            height: 50,
-            child: ElevatedButton(
-              onPressed: () {
-                // Aksi Simpan Ticket (misalnya screenshot atau simpan ke galeri)
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Fitur ini belum diimplementasikan.')),
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              child: const Text(
-                'Simpan Ticket',
-                style: TextStyle(fontSize: 16, color: Colors.white),
-              ),
-            ),
-          ),
+          // ✅ TOMBOL DINAMIS BERDASARKAN STATUS
+          _buildActionButtons(context, ticket),
         ],
       ),
     );
   }
 
-  // Helper widget untuk info di header
+  // ✅ WIDGET BARU UNTUK MEMBUAT TOMBOL KONDISIONAL
+  Widget _buildActionButtons(BuildContext context, Ticket ticket) {
+    switch (ticket.status) {
+      case 'pending':
+        return Column(
+          children: [
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: ElevatedButton(
+                onPressed: () => _handlePayment(ticket.orderId),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue, // Warna untuk aksi utama
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: const Text(
+                  'Lanjutkan Pembayaran',
+                  style: TextStyle(fontSize: 16, color: Colors.white),
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: TextButton(
+                onPressed: () => _cancelOrder(ticket.orderId),
+                child: const Text(
+                  'Batalkan Pesanan',
+                  style: TextStyle(fontSize: 16, color: Colors.red),
+                ),
+              ),
+            ),
+          ],
+        );
+      case 'canceled':
+        return SizedBox(
+          width: double.infinity,
+          height: 50,
+          child: ElevatedButton(
+            onPressed: () => _deleteTicket(ticket.orderId),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red, // Warna untuk aksi destruktif
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: const Text(
+              'Hapus Tiket',
+              style: TextStyle(fontSize: 16, color: Colors.white),
+            ),
+          ),
+        );
+      default: // Untuk status lain ('valid', 'completed', dll.)
+        return SizedBox(
+          width: double.infinity,
+          height: 50,
+          child: ElevatedButton(
+            onPressed: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('This feature has not been implemented yet.'),
+                ),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: const Text(
+              'Save Ticket',
+              style: TextStyle(fontSize: 16, color: Colors.white),
+            ),
+          ),
+        );
+    }
+  }
+
   Widget buildHeaderInfo(String label, String value, {bool isRight = false}) {
     return Column(
       crossAxisAlignment:
       isRight ? CrossAxisAlignment.end : CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: const TextStyle(color: Colors.grey, fontSize: 14),
-        ),
+        Text(label, style: const TextStyle(color: Colors.grey, fontSize: 14)),
         const SizedBox(height: 5),
         Text(
           value,
@@ -271,7 +372,6 @@ class _TicketPageState extends State<TicketPage> {
     );
   }
 
-  // Helper widget untuk baris info
   Widget buildInfoRow(String label, String value) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
@@ -282,18 +382,23 @@ class _TicketPageState extends State<TicketPage> {
             width: 120,
             child: Text(label, style: const TextStyle(color: Colors.grey)),
           ),
-          Expanded(child: Text(value, style: const TextStyle(fontWeight: FontWeight.w500))),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(fontWeight: FontWeight.w500),
+            ),
+          ),
         ],
       ),
     );
   }
 
-  // Helper widget untuk status tiket
+  // ✅ PENAMBAHAN CASE UNTUK 'waiting for payment'
   Widget buildTicketStatusBadge(String status) {
     Color badgeColor;
     String displayText;
 
-    switch (status.toLowerCase()) {
+    switch (status) {
       case 'valid':
         badgeColor = Colors.blue;
         displayText = 'Valid';
@@ -306,9 +411,10 @@ class _TicketPageState extends State<TicketPage> {
         badgeColor = Colors.red;
         displayText = 'Canceled';
         break;
+      case 'waiting for payment': // <-- KASUS BARU
       case 'pending':
         badgeColor = Colors.orange;
-        displayText = 'Pending';
+        displayText = 'Menunggu Pembayaran'; // Teks lebih deskriptif
         break;
       default:
         badgeColor = Colors.grey;
@@ -324,19 +430,18 @@ class _TicketPageState extends State<TicketPage> {
       child: Text(
         displayText,
         style: const TextStyle(
-            color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
+          color: Colors.white,
+          fontWeight: FontWeight.bold,
+          fontSize: 12,
+        ),
       ),
     );
   }
 
-  // Helper widget untuk status pembayaran
   Widget buildPaymentStatus(String status) {
     bool isPaid = status.toLowerCase() == 'lunas';
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 16,
-        vertical: 10,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
         color: isPaid ? Colors.green[50] : Colors.orange[50],
         borderRadius: BorderRadius.circular(12),
@@ -353,8 +458,9 @@ class _TicketPageState extends State<TicketPage> {
           Text(
             'Status Pembayaran: $status',
             style: TextStyle(
-                color: isPaid ? Colors.green : Colors.orange,
-                fontWeight: FontWeight.bold),
+              color: isPaid ? Colors.green : Colors.orange,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ],
       ),

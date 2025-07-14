@@ -80,7 +80,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
           Container(
             height: 70,
             width: double.infinity,
-            color: Colors.green,
+            color: Color(0xFF629584),
             alignment: Alignment.bottomCenter,
           ),
           Container(
@@ -99,14 +99,14 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 20),
                     decoration: BoxDecoration(
-                      color: isSelected ? Colors.green : Colors.white,
+                      color: isSelected ? Color(0xFF629584): Colors.white,
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(color: Colors.green),
                     ),
                     child: Text(
                       filters[index],
                       style: TextStyle(
-                        color: isSelected ? Colors.white : Colors.green,
+                        color: isSelected ? Colors.white : Color(0xFF629584),
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -199,7 +199,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
           color: Colors.blue,
         );
       case "completed":
-        return _buildTextStatusBox("Completed", Colors.green, Colors.white);
+        return _buildTextStatusBox("Completed", Color(0xFF629584), Colors.white);
       case "canceled":
         return _buildTextStatusBox("Canceled", Colors.red, Colors.white);
       default:

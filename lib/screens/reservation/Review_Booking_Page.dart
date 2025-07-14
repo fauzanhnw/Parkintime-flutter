@@ -8,7 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 class ReviewBookingPage extends StatefulWidget {
   final String kodeslot;
   final String id_lahan;
-  final String carid;
+  final String carid; // ID Kendaraan sudah ada di sini
   final String date;
   final String duration;
   final String hours;
@@ -20,7 +20,7 @@ class ReviewBookingPage extends StatefulWidget {
     super.key,
     required this.kodeslot,
     required this.id_lahan,
-    required this.carid,
+    required this.carid, // Pastikan ini dikirim dari halaman sebelumnya
     required this.date,
     required this.duration,
     required this.hours,
@@ -59,7 +59,6 @@ class _ReviewBookingPageState extends State<ReviewBookingPage> {
         _fetchVehicleDetails(),
       ]);
     } catch (e) {
-      // Menampilkan error di konsol untuk debugging
       print("Error fetching page details: $e");
     } finally {
       if (mounted) {
@@ -95,6 +94,7 @@ class _ReviewBookingPageState extends State<ReviewBookingPage> {
       final response = await http.get(Uri.parse('https://app.parkintime.web.id/flutter/get_car.php?id_akun=$_idAkun'));
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body)['data'];
+        // Pastikan widget.carid digunakan untuk menemukan kendaraan yang benar
         final carData = data.firstWhere((c) => c['id'].toString() == widget.carid, orElse: () => null);
         if (carData != null && mounted) {
           setState(() {
@@ -122,42 +122,29 @@ class _ReviewBookingPageState extends State<ReviewBookingPage> {
     http.Response? response;
 
     try {
-      // --- PERBAIKAN DIMULAI DI SINI ---
-
-      // 1. Menyiapkan string waktu masuk dari widget (misal: "2025-07-04 10:00 PM")
-      final String waktuMasukInput = "${widget.date} ${widget.hours.split(' - ')[0]}";
-
-      // 2. Membuat formatter untuk format input (12 jam dengan AM/PM)
-      final DateFormat inputFormatter = DateFormat('yyyy-MM-dd hh:mm a');
-
-      // 3. Membuat formatter untuk format output (24 jam, sesuai kebutuhan API)
+      // Mengolah waktu masuk dan keluar
+      final String timePart = widget.hours.split(' - ')[0];
+      final String waktuMasukInput = "${widget.date} $timePart";
+      final bool is12HourFormat = timePart.contains("AM") || timePart.contains("PM");
+      final DateFormat inputFormatter = is12HourFormat ? DateFormat('yyyy-MM-dd hh:mm a') : DateFormat('yyyy-MM-dd HH:mm');
       final DateFormat outputFormatter = DateFormat('yyyy-MM-dd HH:mm:ss');
-
-      // 4. Mengurai string input menjadi objek DateTime
       final DateTime waktuMasuk = inputFormatter.parse(waktuMasukInput);
-
-      // 5. Memformat objek DateTime ke string format 24 jam untuk API
       final String waktuMasukForApi = outputFormatter.format(waktuMasuk);
-
-      // 6. Mengurai durasi dari string (misal: "2 Jam" -> 2)
       final int durasiJam = int.tryParse(widget.duration.split(' ')[0]) ?? 0;
-
-      // 7. Menghitung waktu keluar dengan menambahkan durasi
       final DateTime waktuKeluar = waktuMasuk.add(Duration(hours: durasiJam));
-
-      // 8. Memformat waktu keluar ke string format 24 jam untuk API
       final String waktuKeluarForApi = outputFormatter.format(waktuKeluar);
 
-      // 9. Membuat request body yang sesuai dengan API
+      // --- PERUBAHAN UTAMA ADA DI SINI ---
+      // Menambahkan 'id_kendaraan' ke body request
       final requestBody = {
         'id_akun': _idAkun,
         'id_slot': widget.kodeslot,
-        'biaya_total': widget.total_price,
-        'waktu_masuk': waktuMasukForApi, // Menggunakan string format 24 jam
-        'waktu_keluar': waktuKeluarForApi, // Menggunakan string format 24 jam
+        'id_kendaraan': widget.carid, // <-- ID KENDARAAN DITAMBAHKAN DI SINI
+        'biaya_total': widget.total_price.toString(),
+        'waktu_masuk': waktuMasukForApi,
+        'waktu_keluar': waktuKeluarForApi,
       };
-
-      // --- PERBAIKAN SELESAI DI SINI ---
+      // --- AKHIR DARI PERUBAHAN ---
 
       final url = Uri.parse('https://app.parkintime.web.id/flutter/create_booking.php');
 
@@ -167,15 +154,14 @@ class _ReviewBookingPageState extends State<ReviewBookingPage> {
         body: jsonEncode(requestBody),
       );
 
-      // Cek jika widget masih ada di tree sebelum memproses response
       if (!mounted) return;
 
-      if (response.statusCode == 201) { // API yang baik mengembalikan 201 Created
+      if (response.statusCode == 201 || response.statusCode == 200) {
         final responseData = jsonDecode(response.body);
         if (responseData['success'] == true) {
           final String redirectUrl = responseData['redirect_url'];
 
-          Navigator.push(
+          Navigator.pushReplacement(
             context,
             MaterialPageRoute(
               builder: (context) => PaymentWebViewPage(
@@ -196,6 +182,8 @@ class _ReviewBookingPageState extends State<ReviewBookingPage> {
       String errorMessage = e.toString();
       if (e is FormatException && response != null) {
         errorMessage = "Failed to parse JSON. Server Response:\n${response.body}";
+      } else if (e is FormatException) {
+        errorMessage = "Failed to parse date/time. Input was: '${widget.date} ${widget.hours.split(' - ')[0]}'. Error: ${e.message}";
       }
 
       print("--- ERROR LOG ---\n$errorMessage\n--- END ERROR LOG ---");
@@ -218,9 +206,25 @@ class _ReviewBookingPageState extends State<ReviewBookingPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Review & Create Booking'),
-        backgroundColor: Colors.green,
-        foregroundColor: Colors.white,
+        toolbarHeight: 80,
+        backgroundColor: Color(0xFF629584),
+        centerTitle: true,
+        title: Text(
+          'Review Booking',
+          style: TextStyle(
+            fontSize: 20,
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        leading: IconButton(
+          icon: Icon(
+            Icons.arrow_back_rounded,
+            color: Colors.white,
+            size: 28,
+          ),
+          onPressed: () => Navigator.pop(context),
+        ),
       ),
       body: _isLoading
           ? Center(child: CircularProgressIndicator(color: Colors.green))
@@ -285,7 +289,7 @@ class _ReviewBookingPageState extends State<ReviewBookingPage> {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(title, style: TextStyle(color: Colors.grey.shade600)),
           const SizedBox(width: 16),
@@ -293,11 +297,10 @@ class _ReviewBookingPageState extends State<ReviewBookingPage> {
             child: Text(
               value,
               textAlign: TextAlign.end,
-              overflow: isPrice ? TextOverflow.visible : TextOverflow.ellipsis,
-              maxLines: isPrice ? null : 1,
               style: TextStyle(
                 fontWeight: isBold ? FontWeight.bold : FontWeight.w600,
                 fontSize: isBold ? 16 : 14,
+                color: Colors.black87,
               ),
             ),
           ),

@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:parkintime/screens/reservation/select_spot_parkir.dart'; // <-- LANGKAH 1: Impor halaman tujuan
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 
@@ -129,10 +130,13 @@ class _HomePageContentState extends State<HomePageContent> {
   }
 
   String _capitalizeEachWord(String input) {
-    return input.split(' ').map((word) {
-      if (word.isEmpty) return word;
-      return word[0].toUpperCase() + word.substring(1).toLowerCase();
-    }).join(' ');
+    return input
+        .split(' ')
+        .map((word) {
+          if (word.isEmpty) return word;
+          return word[0].toUpperCase() + word.substring(1).toLowerCase();
+        })
+        .join(' ');
   }
 
   String _limitWords(String text, int maxWords) {
@@ -143,9 +147,6 @@ class _HomePageContentState extends State<HomePageContent> {
 
   @override
   Widget build(BuildContext context) {
-    // Perkirakan tinggi kartu reservasi agar SizedBox bisa disesuaikan
-    // Kartu ini memiliki padding, text, dan button. Kira-kira tingginya ~160px.
-    // Kita ingin setengahnya tumpang tindih, jadi kita butuh ruang ekstra ~80px.
     const double cardOverlap = 80.0;
 
     return SafeArea(
@@ -153,39 +154,31 @@ class _HomePageContentState extends State<HomePageContent> {
         onRefresh: _handleRefresh,
         child: Container(
           height: double.infinity,
-          color: const Color.fromARGB(255, 230, 227, 227),
+          color: const Color.fromARGB(255, 238, 232, 232),
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // === PERUBAHAN UTAMA DI SINI ===
                 Stack(
                   children: [
-                    // Widget Column ini sekarang mendefinisikan ukuran Stack
                     Column(
                       children: [
                         _buildHeader(),
-                        // Beri ruang kosong di bawah header seukuran tumpang tindih kartu
                         const SizedBox(height: cardOverlap),
                       ],
                     ),
-                    // Sekarang posisikan kartu di bagian bawah Stack yang sudah diperluas
                     Positioned(
-                      bottom: 0, // Posisikan di bagian bawah ruang yang baru dibuat
+                      bottom: 0,
                       left: 20,
                       right: 20,
                       child: _buildReservationCard(),
                     ),
                   ],
                 ),
-                // Sesuaikan SizedBox agar jarak konten di bawahnya pas
                 const SizedBox(height: 20),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: _buildMyCarSection(context),
-                ),
-                const SizedBox(height: 45),
+                _buildMyCarSection(context),
+                const SizedBox(height: 30),
                 _buildParkingSpotSection(),
               ],
             ),
@@ -196,11 +189,15 @@ class _HomePageContentState extends State<HomePageContent> {
   }
 
   Widget _buildHeader() {
-    // Padding bawah header dikurangi karena ruang ekstra sekarang diatur oleh SizedBox di dalam Stack
     return Container(
       width: double.infinity,
       color: Color(0xFF629584),
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 80), // Sesuaikan padding bawah
+      padding: const EdgeInsets.fromLTRB(
+        20,
+        20,
+        25,
+        100,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -212,7 +209,7 @@ class _HomePageContentState extends State<HomePageContent> {
             ),
             child: Image.asset('assets/log.png', height: 30),
           ),
-          const SizedBox(height: 40),
+          const SizedBox(height: 30),
           Text(
             "Hi, $_userName",
             style: const TextStyle(
@@ -230,7 +227,7 @@ class _HomePageContentState extends State<HomePageContent> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Color(0xFFD9EAE8),
+        color: Color(0XFFB5D0ED),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -261,7 +258,7 @@ class _HomePageContentState extends State<HomePageContent> {
                     SizedBox(height: 4),
                     Text(
                       "Book your parking spot now",
-                      style: TextStyle(fontSize: 14, color: Colors.black54),
+                      style: TextStyle(fontSize: 14, color: Colors.black),
                     ),
                   ],
                 ),
@@ -292,8 +289,8 @@ class _HomePageContentState extends State<HomePageContent> {
               },
               child: Text("Reserve Now"),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white,
-                foregroundColor: Colors.black87,
+                backgroundColor: Color(0xFF629584),
+                foregroundColor: Colors.white,
                 padding: EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -311,87 +308,119 @@ class _HomePageContentState extends State<HomePageContent> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text(
-              "My Car",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            GestureDetector(
-              onTap: () async {
-                final result = await Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => ManageVehiclePage()),
-                );
-                if (result == true) {
-                  _loadVehiclesFromAPI();
-                }
-              },
-              child: const Text(
-                "Manage Vehicle",
-                style: TextStyle(
-                  fontSize: 15,
-                  color: Color.fromARGB(255, 236, 63, 43),
-                  fontWeight: FontWeight.bold,
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "My Car",
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  SizedBox(height: 4),
+                  Container(
+                    height: 2,
+                    width: 40,
+                    color: Color(0xFF2ECC40),
+                  ),
+                ],
+              ),
+              TextButton(
+                onPressed: () async {
+                  final result = await Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => ManageVehiclePage()),
+                  );
+                  if (result == true) {
+                    _loadVehiclesFromAPI();
+                  }
+                },
+                style: TextButton.styleFrom(
+                  foregroundColor: const Color.fromARGB(255, 236, 63, 43),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                    side: const BorderSide(color: Color.fromARGB(255, 240, 101, 82)),
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                  visualDensity: VisualDensity.compact,
+                ),
+                child: const Text(
+                  "Manage Vehicle",
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
         const SizedBox(height: 15),
-        vehicles.isEmpty
-            ? Container(
-          width: double.infinity,
-          constraints: BoxConstraints(
-            minHeight: 100,
-          ),
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black12,
-                blurRadius: 6,
-                offset: Offset(0, 3),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              Image.asset(
-                'assets/car.png',
-                width: 60,
-                height: 60,
-                fit: BoxFit.contain,
-              ),
-              SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  "No cars added yet",
-                  style: TextStyle(fontSize: 16, color: Colors.black54),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20.0),
+          child: vehicles.isEmpty
+              ? Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: const Color.fromARGB(255, 255, 255, 255),
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black12,
+                        blurRadius: 6,
+                        offset: Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                  child: IntrinsicHeight(
+                    child: Row(
+                      children: [
+                        Image.asset(
+                          'assets/car.png',
+                          width: 60,
+                          height: 60,
+                          fit: BoxFit.contain,
+                        ),
+                        const SizedBox(width: 12),
+                        const VerticalDivider(
+                          color: Colors.black26,
+                          thickness: 1,
+                          indent: 10,
+                          endIndent: 10,
+                        ),
+                        const SizedBox(width: 12),
+                        const Expanded(
+                          child: Text(
+                            "No cars added yet",
+                            style: TextStyle(fontSize: 16, color: Colors.black54),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              : SizedBox(
+                  height: 100,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: vehicles.length,
+                    separatorBuilder: (_, __) => SizedBox(width: 12),
+                    itemBuilder: (context, index) {
+                      final vehicle = vehicles[index];
+                      return VehicleCard(
+                        plate: vehicle['no_kendaraan'] ?? '-',
+                        brand: vehicle['merek'] ?? '-',
+                        type: vehicle['tipe'] ?? '-',
+                        color: vehicle['warna'] ?? '-',
+                      );
+                    },
+                  ),
                 ),
-              ),
-            ],
-          ),
-        )
-            : SizedBox(
-          height: 100,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            itemCount: vehicles.length,
-            separatorBuilder: (_, __) => SizedBox(width: 12),
-            itemBuilder: (context, index) {
-              final vehicle = vehicles[index];
-              return VehicleCard(
-                plate: vehicle['no_kendaraan'] ?? '-',
-                brand: vehicle['merek'] ?? '-',
-                type: vehicle['tipe'] ?? '-',
-                color: vehicle['warna'] ?? '-',
-              );
-            },
-          ),
         ),
       ],
     );
@@ -401,26 +430,43 @@ class _HomePageContentState extends State<HomePageContent> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 29),
-          child: Text(
-            "Parking Spot",
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                "Parking Spot",
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              SizedBox(height: 4),
+              Container(
+                height: 2,
+                width: 40,
+                color: Color(0xFF2ECC40),
+              ),
+            ],
           ),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 15),
         Container(
           height: 180,
-          padding: const EdgeInsets.only(left: 20),
-          margin: const EdgeInsets.only(bottom: 10),
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
             itemCount: parkingLots.length,
+            padding: EdgeInsets.symmetric(horizontal: 20),
             itemBuilder: (context, index) {
               final lot = parkingLots[index];
+              final availableSlots = lot['slot_tersedia'] ?? 0;
+              
+              // --- LANGKAH 2: Mengirim ID Lahan ke _buildParkingCard ---
+              final String lahanId = lot['id']?.toString() ?? '';
+
               return _buildParkingCard(
+                lahanId, // Kirim ID
                 lot['nama_lokasi'] ?? 'Unknown',
                 lot['foto'] ?? '',
+                availableSlots,
               );
             },
           ),
@@ -429,46 +475,94 @@ class _HomePageContentState extends State<HomePageContent> {
     );
   }
 
-  Widget _buildParkingCard(String title, String foto) {
-    return Container(
-      width: 130,
-      margin: const EdgeInsets.only(right: 15),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.shade300,
-            blurRadius: 6,
-            offset: Offset(0, 3),
+  // --- LANGKAH 2 (Lanjutan): Update signature dan bungkus dengan GestureDetector ---
+  Widget _buildParkingCard(String id, String title, String foto, int availableSlots) {
+    return GestureDetector( // <-- LANGKAH 3: Bungkus dengan GestureDetector
+      onTap: () {
+        // --- LANGKAH 4: Lakukan Navigasi ---
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ParkingLotDetailPage(
+              id_lahan: id, // Kirim ID yang sudah diterima
+            ),
           ),
-        ],
-        color: Colors.white,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            height: 100,
-            decoration: BoxDecoration(
-              image: DecorationImage(
-                image: (foto.isNotEmpty)
-                    ? NetworkImage('https://app.parkintime.web.id/foto/$foto')
-                    : AssetImage("assets/spot.png") as ImageProvider,
-                fit: BoxFit.cover,
+        );
+      },
+      child: Container(
+        width: 140,
+        margin: const EdgeInsets.only(right: 15),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.shade300,
+              blurRadius: 8,
+              spreadRadius: 1,
+              offset: Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Expanded(
+              flex: 2,
+              child: ClipRRect(
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(12),
+                ),
+                child: Image(
+                  image: (foto.isNotEmpty)
+                      ? NetworkImage('https://app.parkintime.web.id/foto/$foto')
+                      : AssetImage("assets/spot.png") as ImageProvider,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) =>
+                      Icon(Icons.business, size: 40, color: Colors.grey),
+                ),
               ),
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(8),
-            child: Text(
-              title,
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
+            Expanded(
+              flex: 2,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(8, 8, 8, 4),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    Row(
+                      children: [
+                        Text(
+                          "Available",
+                          style: TextStyle(fontSize: 12, color: Colors.green),
+                        ),
+                        const Spacer(),
+                        Text(
+                          availableSlots.toString(),
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: availableSlots > 0 ? Colors.green.shade600 : Colors.red,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'halaman_home/home_screen.dart';
 import 'register_screen.dart';
+import 'forgot_password_webview.dart';
 
 class LoginScreen extends StatefulWidget {
   @override
@@ -203,7 +204,14 @@ class _LoginScreenState extends State<LoginScreen> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           TextButton(
-                            onPressed: () {},
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => ForgotPasswordWebView(),
+                                ),
+                              );
+                            },
                             child: Text(
                               "Forgot Password?",
                               style: TextStyle(color: Colors.green),
