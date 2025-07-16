@@ -18,7 +18,7 @@ class _ForgotPasswordWebViewState extends State<ForgotPasswordWebView> {
   final String forgotPasswordUrl = 'https://app.parkintime.web.id/flutter/reset-password/forgot-password.php';
 
   // URL yang menandakan bahwa email instruksi telah terkirim
-  final String successMessageUrl = 'https://app.parkintime.web.id/flutter/reset-password/forgot-password.php?message=If+an+account+with+that+email+exists%2C+we+have+sent+instructions+to+reset+your+password.';
+  final String successMessageUrl = 'https://app.parkintime.web.id/flutter/reset-password/update-password.php';
 
   @override
   void initState() {
